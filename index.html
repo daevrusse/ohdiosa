@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Escáner de Inventario</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --accent: #22c55e;
+    --accent-dark: #16a34a;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --border: #334155;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 12px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.3rem;
+    text-align: center;
+    margin: 8px 0 16px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border);
+  }
+  #reader {
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--accent); color: #06210f; }
+  .btn-primary:active { background: var(--accent-dark); }
+  .btn-secondary { background: #334155; color: var(--text); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .status {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 8px;
+    min-height: 18px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th, td {
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  th { color: var(--text-dim); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    background: #0f172a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+  label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .origen-row {
+    display: flex;
+    gap: 10px;
+  }
+  .origen-row > div { flex: 1; }
+  .del-btn {
+    background: transparent;
+    color: var(--danger);
+    font-size: 1.1rem;
+    padding: 4px;
+    flex: none;
+  }
+  .empty-msg {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 20px 0;
+    font-size: 0.9rem;
+  }
+  .export-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .export-row button { flex: 1 1 45%; }
+  .btn-whatsapp { background: #25D366; color: #06210f; }
+  .count-badge {
+    background: var(--accent);
+    color: #06210f;
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .table-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>📦 Escáner de Inventario</h1>
+
+<div class="card">
+  <label>URL de Google Sheets (Apps Script /exec)</label>
+  <div style="display:flex; gap:8px;">
+    <input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" />
+    <button id="saveSheetUrl" class="btn-primary" style="flex:0 0 auto; padding:8px 14px;">Guardar</button>
+  </div>
+  <div class="status" id="sheetStatus">No configurado. Los datos solo se guardan en este celular.</div>
+</div>
+
+<div class="card">
+  <div class="origen-row">
+    <div>
+      <label>Origen de salida</label>
+      <select id="origenSalida"></select>
+    </div>
+    <div>
+      <label>Origen de entrada</label>
+      <select id="origenEntrada"></select>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="reader"></div>
+  <div class="controls">
+    <button id="startBtn" class="btn-primary">Iniciar cámara</button>
+    <button id="stopBtn" class="btn-secondary" disabled>Detener</button>
+  </div>
+  <div id="status" class="status">Presiona "Iniciar cámara" y apunta al código de barras.</div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <strong>Inventario</strong>
+    <span class="count-badge" id="countBadge">0 items</span>
+  </div>
+  <div class="table-wrap">
+    <table id="invTable">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Origen salida</th>
+          <th>Origen entrada</th>
+          <th>Cant.</th>
+          <th>Stock</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="invBody"></tbody>
+    </table>
+    <div id="emptyMsg" class="empty-msg">Aún no has escaneado nada.</div>
+  </div>
+  <div class="export-row">
+    <button id="exportXlsx" class="btn-primary">Descargar Excel</button>
+    <button id="exportCsv" class="btn-secondary">Descargar CSV</button>
+    <button id="shareWsp" class="btn-whatsapp">📤 Compartir por WhatsApp</button>
+    <button id="clearAll" class="btn-danger">Borrar todo</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'inventario_escaner_v2';
+const ORIGENES = [
+  'TIENDA DE ANCASH',
+  'TIENDA DE CAJAMARCA',
+  'TIENDA DE MANTARO',
+  'ALMACÉN GENERAL'
+];
+
+let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let html5QrCode = null;
+let scanning = false;
+let lastScan = { code: null, time: 0 };
+
+const invBody = document.getElementById('invBody');
+const emptyMsg = document.getElementById('emptyMsg');
+const countBadge = document.getElementById('countBadge');
+const statusEl = document.getElementById('status');
+const origenSalidaSel = document.getElementById('origenSalida');
+const origenEntradaSel = document.getElementById('origenEntrada');
+const sheetUrlInput = document.getElementById('sheetUrl');
+const sheetStatus = document.getElementById('sheetStatus');
+
+const SHEET_URL_KEY = 'inventario_sheet_url';
+let sheetUrl = localStorage.getItem(SHEET_URL_KEY) || '';
+sheetUrlInput.value = sheetUrl;
+updateSheetStatus('idle');
+
+function updateSheetStatus(state) {
+  if (!sheetUrl) {
+    sheetStatus.textContent = 'No configurado. Los datos solo se guardan en este celular.';
+    return;
+  }
+  if (state === 'syncing') sheetStatus.textContent = 'Sincronizando con Google Sheets...';
+  else if (state === 'ok') sheetStatus.textContent = '✅ Sincronizado con Google Sheets.';
+  else if (state === 'error') sheetStatus.textContent = '⚠️ No se pudo sincronizar (revisa la URL o tu conexión).';
+  else sheetStatus.textContent = 'Conectado a Google Sheets.';
+}
+
+document.getElementById('saveSheetUrl').addEventListener('click', () => {
+  sheetUrl = sheetUrlInput.value.trim();
+  localStorage.setItem(SHEET_URL_KEY, sheetUrl);
+  updateSheetStatus('idle');
+  if (sheetUrl) syncToSheet();
+});
+
+let syncTimer = null;
+function scheduleSync() {
+  if (!sheetUrl) { updateSheetStatus('idle'); return; }
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncToSheet, 800);
+}
+
+async function syncToSheet() {
+  if (!sheetUrl) return;
+  updateSheetStatus('syncing');
+  try {
+    await fetch(sheetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ items })
+    });
+    updateSheetStatus('ok');
+  } catch (err) {
+    updateSheetStatus('error');
+  }
+}
+
+function fillOrigenSelect(sel) {
+  sel.innerHTML = ORIGENES.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+fillOrigenSelect(origenSalidaSel);
+fillOrigenSelect(origenEntradaSel);
+// por defecto, entrada distinta a salida si es posible
+origenEntradaSel.selectedIndex = 1;
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  scheduleSync();
+}
+
+function origenOptionsHtml(selected) {
+  return ORIGENES.map(o => `<option value="${o}" ${o === selected ? 'selected' : ''}>${o}</option>`).join('');
+}
+
+function render() {
+  invBody.innerHTML = '';
+  if (items.length === 0) {
+    emptyMsg.style.display = 'block';
+  } else {
+    emptyMsg.style.display = 'none';
+  }
+  items.forEach((item, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.code}</td>
+      <td><select data-idx="${idx}" data-field="origenSalida">${origenOptionsHtml(item.origenSalida)}</select></td>
+      <td><select data-idx="${idx}" data-field="origenEntrada">${origenOptionsHtml(item.origenEntrada)}</select></td>
+      <td style="width:60px;"><input type="number" min="0" value="${item.qty}" data-idx="${idx}" data-field="qty" /></td>
+      <td style="width:60px;"><input type="number" min="0" value="${item.stock}" data-idx="${idx}" data-field="stock" /></td>
+      <td><button class="del-btn" data-idx="${idx}">✕</button></td>
+    `;
+    invBody.appendChild(tr);
+  });
+  countBadge.textContent = items.length + (items.length === 1 ? ' item' : ' items');
+}
+
+invBody.addEventListener('input', (e) => {
+  const idx = e.target.getAttribute('data-idx');
+  const field = e.target.getAttribute('data-field');
+  if (idx === null) return;
+  if (field === 'qty' || field === 'stock') {
+    items[idx][field] = parseInt(e.target.value) || 0;
+  } else {
+    items[idx][field] = e.target.value;
+  }
+  save();
+});
+
+invBody.addEventListener('change', (e) => {
+  const idx = e.target.getAttribute('data-idx');
+  const field = e.target.getAttribute('data-field');
+  if (idx === null || e.target.tagName !== 'SELECT') return;
+  items[idx][field] = e.target.value;
+  save();
+});
+
+invBody.addEventListener('click', (e) => {
+  if (e.target.classList.contains('del-btn')) {
+    const idx = e.target.getAttribute('data-idx');
+    items.splice(idx, 1);
+    save();
+    render();
+  }
+});
+
+function addScan(code) {
+  const now = Date.now();
+  // evitar duplicados por lectura repetida en menos de 2 segundos
+  if (code === lastScan.code && (now - lastScan.time) < 2000) return;
+  lastScan = { code, time: now };
+
+  const origenSalida = origenSalidaSel.value;
+  const origenEntrada = origenEntradaSel.value;
+
+  const existing = items.find(i => i.code === code && i.origenSalida === origenSalida && i.origenEntrada === origenEntrada);
+  if (existing) {
+    existing.qty += 1;
+    statusEl.textContent = `Código ${code} ya existía, cantidad +1`;
+  } else {
+    items.push({ code, origenSalida, origenEntrada, qty: 1, stock: 0 });
+    statusEl.textContent = `Código escaneado: ${code}`;
+  }
+  save();
+  render();
+  if (navigator.vibrate) navigator.vibrate(100);
+}
+
+document.getElementById('startBtn').addEventListener('click', async () => {
+  if (scanning) return;
+  html5QrCode = new Html5Qrcode("reader");
+  try {
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 150 },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.QR_CODE
+        ]
+      },
+      (decodedText) => addScan(decodedText),
+      () => {}
+    );
+    scanning = true;
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('stopBtn').disabled = false;
+    statusEl.textContent = 'Cámara activa. Apunta al código de barras.';
+  } catch (err) {
+    statusEl.textContent = 'No se pudo acceder a la cámara: ' + err;
+  }
+});
+
+document.getElementById('stopBtn').addEventListener('click', async () => {
+  if (html5QrCode && scanning) {
+    await html5QrCode.stop();
+    html5QrCode.clear();
+    scanning = false;
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('stopBtn').disabled = true;
+    statusEl.textContent = 'Cámara detenida.';
+  }
+});
+
+document.getElementById('clearAll').addEventListener('click', () => {
+  if (confirm('¿Borrar todo el inventario?')) {
+    items = [];
+    save();
+    render();
+  }
+});
+
+document.getElementById('exportCsv').addEventListener('click', () => {
+  if (items.length === 0) { alert('No hay datos para exportar.'); return; }
+  let csv = 'Codigo,Origen salida,Origen entrada,Cantidad,Stock\n';
+  items.forEach(i => {
+    csv += `"${i.code}","${i.origenSalida}","${i.origenEntrada}",${i.qty},${i.stock}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'inventario.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('exportXlsx').addEventListener('click', () => {
+  if (items.length === 0) { alert('No hay datos para exportar.'); return; }
+  const data = [['Codigo', 'Origen salida', 'Origen entrada', 'Cantidad', 'Stock']].concat(
+    items.map(i => [i.code, i.origenSalida, i.origenEntrada, i.qty, i.stock])
+  );
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+  XLSX.writeFile(wb, 'inventario.xlsx');
+});
+
+function buildXlsxBlob() {
+  const data = [['Codigo', 'Origen salida', 'Origen entrada', 'Cantidad', 'Stock']].concat(
+    items.map(i => [i.code, i.origenSalida, i.origenEntrada, i.qty, i.stock])
+  );
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+  const arrayBuf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  return new Blob([arrayBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+document.getElementById('shareWsp').addEventListener('click', async () => {
+  if (items.length === 0) { alert('No hay datos para compartir.'); return; }
+  const blob = buildXlsxBlob();
+  const file = new File([blob], 'inventario.xlsx', { type: blob.type });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: 'Inventario',
+        text: 'Inventario escaneado'
+      });
+    } catch (err) {
+      // usuario canceló o hubo error, no hacer nada
+    }
+  } else {
+    alert('Tu navegador no permite compartir archivos directamente. Usa "Descargar Excel" y compártelo manualmente por WhatsApp.');
+  }
+});
+
+render();
+if (sheetUrl) syncToSheet();
+</script>
+
+</body>
+</html>
