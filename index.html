@@ -95,10 +95,7 @@
     margin-bottom: 4px;
     text-transform: uppercase;
   }
-  .origen-row {
-    display: flex;
-    gap: 10px;
-  }
+  .origen-row { display: flex; gap: 10px; }
   .origen-row > div { flex: 1; }
   .del-btn {
     background: transparent;
@@ -128,19 +125,18 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
   .table-wrap { overflow-x: auto; }
 </style>
 </head>
 <body>
-
 <h1>📦 Escáner de Inventario</h1>
 
 <div class="card">
   <label>URL de Google Sheets (Apps Script /exec)</label>
   <div style="display:flex; gap:8px;">
-    <input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" />
+    <input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/XXXX/exec">
     <button id="saveSheetUrl" class="btn-primary" style="flex:0 0 auto; padding:8px 14px;">Guardar</button>
   </div>
   <div class="status" id="sheetStatus">No configurado. Los datos solo se guardan en este celular.</div>
@@ -165,7 +161,7 @@
     <button id="startBtn" class="btn-primary">Iniciar cámara</button>
     <button id="stopBtn" class="btn-secondary" disabled>Detener</button>
   </div>
-  <div id="status" class="status">Presiona "Iniciar cámara" y apunta al código de barras.</div>
+  <div class="status" id="status">Presiona "Iniciar cámara" y apunta al código de barras.</div>
 </div>
 
 <div class="card">
@@ -187,18 +183,17 @@
       </thead>
       <tbody id="invBody"></tbody>
     </table>
-    <div id="emptyMsg" class="empty-msg">Aún no has escaneado nada.</div>
+  </div>
+  <div class="empty-msg" id="emptyMsg">Aún no has escaneado nada.</div>
+
+  <div class="export-row">
+    <button id="saveOrderBtn" class="btn-primary">💾 Guardar pedido</button>
   </div>
 </div>
 
 <script>
 const STORAGE_KEY = 'inventario_escaner_v2';
-const ORIGENES = [
-  'TIENDA DE ANCASH',
-  'TIENDA DE CAJAMARCA',
-  'TIENDA DE MANTARO',
-  'ALMACÉN GENERAL'
-];
+const ORIGENES = ['TIENDA DE ANCASH', 'TIENDA DE CAJAMARCA', 'TIENDA DE MANTARO', 'ALMACÉN GENERAL'];
 
 let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 let html5QrCode = null;
@@ -213,6 +208,7 @@ const origenSalidaSel = document.getElementById('origenSalida');
 const origenEntradaSel = document.getElementById('origenEntrada');
 const sheetUrlInput = document.getElementById('sheetUrl');
 const sheetStatus = document.getElementById('sheetStatus');
+const saveOrderBtn = document.getElementById('saveOrderBtn');
 
 const SHEET_URL_KEY = 'inventario_sheet_url';
 const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzdWFB8w0460cNdqjTbpc8_Xuo0iTOcwm7dCKLc0TtEFAE_iBy_GoLeMLkNr_qa6-3G/exec';
@@ -221,10 +217,7 @@ sheetUrlInput.value = sheetUrl;
 updateSheetStatus('idle');
 
 function updateSheetStatus(state) {
-  if (!sheetUrl) {
-    sheetStatus.textContent = 'No configurado. Los datos solo se guardan en este celular.';
-    return;
-  }
+  if (!sheetUrl) { sheetStatus.textContent = 'No configurado. Los datos solo se guardan en este celular.'; return; }
   if (state === 'syncing') sheetStatus.textContent = 'Sincronizando con Google Sheets...';
   else if (state === 'ok') sheetStatus.textContent = '✅ Sincronizado con Google Sheets.';
   else if (state === 'error') sheetStatus.textContent = '⚠️ No se pudo sincronizar (revisa la URL o tu conexión).';
@@ -235,37 +228,38 @@ document.getElementById('saveSheetUrl').addEventListener('click', () => {
   sheetUrl = sheetUrlInput.value.trim();
   localStorage.setItem(SHEET_URL_KEY, sheetUrl);
   updateSheetStatus('idle');
-  if (sheetUrl) syncToSheet();
+  if (sheetUrl) syncToSheet(sheetUrl);
 });
 
 let syncTimer = null;
 function scheduleSync() {
   if (!sheetUrl) { updateSheetStatus('idle'); return; }
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(syncToSheet, 800);
+  syncTimer = setTimeout(function () { syncToSheet(sheetUrl); }, 800);
 }
 
-async function syncToSheet() {
-  if (!sheetUrl) return;
+async function syncToSheet(url) {
+  if (!url) return false;
   updateSheetStatus('syncing');
   try {
-    await fetch(sheetUrl, {
+    await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ items })
+      body: JSON.stringify({ items: items })
     });
     updateSheetStatus('ok');
+    return true;
   } catch (err) {
     updateSheetStatus('error');
+    return false;
   }
 }
 
 function fillOrigenSelect(sel) {
-  sel.innerHTML = ORIGENES.map(o => `<option value="${o}">${o}</option>`).join('');
+  sel.innerHTML = ORIGENES.map(function (o) { return '<option value="' + o + '">' + o + '</option>'; }).join('');
 }
 fillOrigenSelect(origenSalidaSel);
 fillOrigenSelect(origenEntradaSel);
-// por defecto, entrada distinta a salida si es posible
 origenEntradaSel.selectedIndex = 1;
 
 function save() {
@@ -274,44 +268,38 @@ function save() {
 }
 
 function origenOptionsHtml(selected) {
-  return ORIGENES.map(o => `<option value="${o}" ${o === selected ? 'selected' : ''}>${o}</option>`).join('');
+  return ORIGENES.map(function (o) {
+    return '<option value="' + o + '" ' + (o === selected ? 'selected' : '') + '>' + o + '</option>';
+  }).join('');
 }
 
 function render() {
   invBody.innerHTML = '';
-  if (items.length === 0) {
-    emptyMsg.style.display = 'block';
-  } else {
-    emptyMsg.style.display = 'none';
-  }
-  items.forEach((item, idx) => {
+  emptyMsg.style.display = items.length === 0 ? 'block' : 'none';
+  items.forEach(function (item, idx) {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${item.code}</td>
-      <td><select data-idx="${idx}" data-field="origenSalida">${origenOptionsHtml(item.origenSalida)}</select></td>
-      <td><select data-idx="${idx}" data-field="origenEntrada">${origenOptionsHtml(item.origenEntrada)}</select></td>
-      <td style="width:60px;"><input type="number" min="0" value="${item.qty}" data-idx="${idx}" data-field="qty" /></td>
-      <td style="width:60px;"><input type="number" min="0" value="${item.stock}" data-idx="${idx}" data-field="stock" /></td>
-      <td><button class="del-btn" data-idx="${idx}">✕</button></td>
-    `;
+    tr.innerHTML =
+      '<td>' + item.code + '</td>' +
+      '<td><select data-idx="' + idx + '" data-field="origenSalida">' + origenOptionsHtml(item.origenSalida) + '</select></td>' +
+      '<td><select data-idx="' + idx + '" data-field="origenEntrada">' + origenOptionsHtml(item.origenEntrada) + '</select></td>' +
+      '<td style="width:60px;"><input type="number" min="0" value="' + item.qty + '" data-idx="' + idx + '" data-field="qty" /></td>' +
+      '<td style="width:60px;"><input type="number" min="0" value="' + item.stock + '" data-idx="' + idx + '" data-field="stock" /></td>' +
+      '<td><button class="del-btn" data-idx="' + idx + '">✕</button></td>';
     invBody.appendChild(tr);
   });
   countBadge.textContent = items.length + (items.length === 1 ? ' item' : ' items');
 }
 
-invBody.addEventListener('input', (e) => {
+invBody.addEventListener('input', function (e) {
   const idx = e.target.getAttribute('data-idx');
   const field = e.target.getAttribute('data-field');
   if (idx === null) return;
-  if (field === 'qty' || field === 'stock') {
-    items[idx][field] = parseInt(e.target.value) || 0;
-  } else {
-    items[idx][field] = e.target.value;
-  }
+  if (field === 'qty' || field === 'stock') items[idx][field] = parseInt(e.target.value) || 0;
+  else items[idx][field] = e.target.value;
   save();
 });
 
-invBody.addEventListener('change', (e) => {
+invBody.addEventListener('change', function (e) {
   const idx = e.target.getAttribute('data-idx');
   const field = e.target.getAttribute('data-field');
   if (idx === null || e.target.tagName !== 'SELECT') return;
@@ -319,7 +307,7 @@ invBody.addEventListener('change', (e) => {
   save();
 });
 
-invBody.addEventListener('click', (e) => {
+invBody.addEventListener('click', function (e) {
   if (e.target.classList.contains('del-btn')) {
     const idx = e.target.getAttribute('data-idx');
     items.splice(idx, 1);
@@ -330,27 +318,28 @@ invBody.addEventListener('click', (e) => {
 
 function addScan(code) {
   const now = Date.now();
-  // evitar duplicados por lectura repetida en menos de 2 segundos
-  if (code === lastScan.code && (now - lastScan.time) < 2000) return;
-  lastScan = { code, time: now };
+  if (code === lastScan.code && now - lastScan.time < 2000) return;
+  lastScan = { code: code, time: now };
 
   const origenSalida = origenSalidaSel.value;
   const origenEntrada = origenEntradaSel.value;
 
-  const existing = items.find(i => i.code === code && i.origenSalida === origenSalida && i.origenEntrada === origenEntrada);
+  const existing = items.find(function (i) {
+    return i.code === code && i.origenSalida === origenSalida && i.origenEntrada === origenEntrada;
+  });
   if (existing) {
-    existing.qty += 1;
-    statusEl.textContent = `Código ${code} ya existía, cantidad +1`;
+    existing.qty++;
+    statusEl.textContent = 'Código ya existía, cantidad +1: ' + code;
   } else {
-    items.push({ code, origenSalida, origenEntrada, qty: 1, stock: 0 });
-    statusEl.textContent = `Código escaneado: ${code}`;
+    items.push({ code: code, origenSalida: origenSalida, origenEntrada: origenEntrada, qty: 1, stock: 0 });
+    statusEl.textContent = 'Código escaneado: ' + code;
   }
   save();
   render();
   if (navigator.vibrate) navigator.vibrate(100);
 }
 
-document.getElementById('startBtn').addEventListener('click', async () => {
+document.getElementById('startBtn').addEventListener('click', async function () {
   if (scanning) return;
   html5QrCode = new Html5Qrcode("reader");
   try {
@@ -369,8 +358,7 @@ document.getElementById('startBtn').addEventListener('click', async () => {
           Html5QrcodeSupportedFormats.QR_CODE
         ]
       },
-      (decodedText) => addScan(decodedText),
-      () => {}
+      function (decodedText) { addScan(decodedText); }
     );
     scanning = true;
     document.getElementById('startBtn').disabled = true;
@@ -381,7 +369,7 @@ document.getElementById('startBtn').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('stopBtn').addEventListener('click', async () => {
+document.getElementById('stopBtn').addEventListener('click', async function () {
   if (html5QrCode && scanning) {
     await html5QrCode.stop();
     html5QrCode.clear();
@@ -392,9 +380,31 @@ document.getElementById('stopBtn').addEventListener('click', async () => {
   }
 });
 
-render();
-if (sheetUrl) syncToSheet();
-</script>
+saveOrderBtn.addEventListener('click', async function () {
+  if (items.length === 0) {
+    statusEl.textContent = 'No hay items para guardar.';
+    return;
+  }
+  saveOrderBtn.disabled = true;
+  const originalText = saveOrderBtn.textContent;
+  saveOrderBtn.textContent = 'Guardando...';
+  let ok = true;
+  if (sheetUrl) {
+    ok = await syncToSheet(sheetUrl);
+  }
+  if (ok) {
+    items = [];
+    save();
+    render();
+    statusEl.textContent = '✅ Pedido guardado en Google Drive. Sistema listo para un nuevo pedido.';
+  } else {
+    statusEl.textContent = '⚠️ No se pudo guardar en Google Drive. Intenta nuevamente antes de reiniciar.';
+  }
+  saveOrderBtn.disabled = false;
+  saveOrderBtn.textContent = originalText;
+});
 
+render();
+</script>
 </body>
 </html>
