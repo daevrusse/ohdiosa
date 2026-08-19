@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Escáner de Inventario</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --accent: #22c55e;
+    --accent-dark: #16a34a;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --border: #334155;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 12px;
+    padding-bottom: 84px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.3rem;
+    text-align: center;
+    margin: 8px 0 16px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border);
+  }
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #06210f; }
+  .btn-primary:active { background: var(--accent-dark); }
+  .btn-secondary { background: #334155; color: var(--text); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-full { width: 100%; display: block; }
+  .status {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 8px;
+    min-height: 18px;
+  }
+  .item-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #16213a;
+  }
+  .item-card:last-child { margin-bottom: 0; }
+  .item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .item-code {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.3px;
+  }
+  .item-tienda {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .item-name {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .item-bottom {
+    display: flex;
+    gap: 10px;
+  }
+  .item-bottom > div { flex: 1; }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    background: #0f172a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+  label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .origen-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .origen-row > div:not(.origen-arrow) { flex: 1; }
+  .origen-arrow {
+    flex: 0 0 auto;
+    color: var(--accent);
+    font-size: 1.2rem;
+    padding-bottom: 8px;
+  }
+  .del-btn {
+    background: transparent;
+    color: var(--danger);
+    font-size: 1.1rem;
+    padding: 4px;
+    flex: none;
+  }
+  .empty-msg {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 20px 0;
+    font-size: 0.9rem;
+  }
+  .count-badge {
+    background: var(--accent);
+    color: #06210f;
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .btn-lista {
+    background: #3b82f6;
+    color: #fff;
+    width: 100%;
+    margin-bottom: 14px;
+  }
+  .ingreso-sub {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+  .table-scroll {
+    overflow-x: auto;
+    max-height: 60vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  #stockTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+  #stockTable th, #stockTable td {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  #stockTable thead th {
+    position: sticky;
+    top: 0;
+    background: #1e293b;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    font-size: 0.68rem;
+  }
+  .stock-readonly {
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px;
+    font-size: 0.9rem;
+    color: var(--text);
+    text-align: center;
+  }
+  .stock-total-info {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--text);
+    margin-top: 10px;
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+  }
+  .totals-bar {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text);
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 14px;
+  }
+  .qty-stepper {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .qty-stepper input[type="number"] { text-align: center; }
+  .qty-stepper button {
+    flex: 0 0 auto;
+    width: 34px;
+    padding: 0;
+    font-size: 1.1rem;
+    background: #334155;
+    color: var(--text);
+    border-radius: 6px;
+  }
+  .qty-stepper button:active { background: var(--accent-dark); color: #06210f; }
+  .qty-stepper.stepper-sm { gap: 2px; }
+  .qty-stepper.stepper-sm button { width: 22px; font-size: 0.85rem; }
+  .qty-stepper.stepper-sm input { width: 46px; }
+
+  /* Modal de escaneo: cámara compacta, solo el recuadro necesario */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+  }
+  .modal-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px;
+    width: 100%;
+    max-width: 320px;
+    border: 1px solid var(--border);
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .modal-close {
+    flex: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 1.3rem;
+    padding: 2px 8px;
+  }
+  #reader {
+    width: 100%;
+    height: 230px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+  }
+  #reader video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+
+  /* Barra de navegación inferior */
+  .bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    z-index: 500;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .nav-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 6px 2px;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .nav-btn .nav-icon { font-size: 1.3rem; }
+  .nav-btn.nav-active { color: var(--accent); background: rgba(34,197,94,0.12); }
+</style>
+</head>
+<body>
+
+<h1 id="mainTitle">📦 Escáner de Inventario</h1>
+
+<!-- ── Abastecimiento: reponer UNA tienda (llega mercadería nueva) ── -->
+<div id="viewAbastecimiento" style="display:none">
+  <div class="card" style="background:#132a1e; border-color:var(--accent);">
+    <div style="font-size:0.85rem; line-height:1.6;">
+      1️⃣ Elige la tienda que vas a abastecer.<br>
+      2️⃣ Presiona "Escanear código" y apunta a cada producto que llega.
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Tienda a abastecer</label>
+    <select id="abastecimientoTiendaSelect"></select>
+    <div class="stock-total-info" id="stockTotalAbastecimiento" style="display:none;"></div>
+  </div>
+
+  <button id="btnScanAbastecimiento" class="btn-primary btn-full" disabled>📷 Escanear código</button>
+
+  <button id="btnNuevaListaAbastecimiento" class="btn-lista" style="margin-top:14px;">➕ Añadir Lista de Inventario</button>
+
+  <div class="totals-bar" id="totalsAbastecimiento">Total productos: 0 · Total unidades: 0</div>
+
+  <div class="card">
+    <div class="card-header">
+      <strong>Reposición — Lista <span id="listaAbastecimientoNum">1</span></strong>
+      <span class="count-badge" id="countBadgeAbastecimiento">0 items</span>
+    </div>
+    <div id="invBodyAbastecimiento"></div>
+    <div id="emptyMsgAbastecimiento" class="empty-msg">Aún no has escaneado nada.</div>
+  </div>
+</div>
+
+<!-- ── Transferencias: mover mercadería entre 2 tiendas ── -->
+<div id="viewTransferencias" style="display:none">
+  <div class="card" style="background:#132a1e; border-color:var(--accent);">
+    <div style="font-size:0.85rem; line-height:1.6;">
+      1️⃣ Elige la tienda de origen y la de destino.<br>
+      2️⃣ Presiona "Escanear código" y apunta a cada producto.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="origen-row">
+      <div>
+        <label>Origen</label>
+        <select id="origenSalida"></select>
+      </div>
+      <div class="origen-arrow">→</div>
+      <div>
+        <label>Destino</label>
+        <select id="origenEntrada"></select>
+      </div>
+    </div>
+    <div class="stock-total-info" id="stockTotalTransferencias" style="display:none;"></div>
+  </div>
+
+  <button id="btnScanTransferencia" class="btn-primary btn-full" disabled>📷 Escanear código</button>
+
+  <button id="btnNuevaListaTransferencia" class="btn-lista" style="margin-top:14px;">➕ Añadir Lista de Inventario</button>
+
+  <div class="totals-bar" id="totalsTransferencia">Total productos: 0 · Total unidades: 0</div>
+
+  <div class="card">
+    <div class="card-header">
+      <strong>Transferencia — Lista <span id="listaTransferenciaNum">1</span></strong>
+      <span class="count-badge" id="countBadgeTransferencia">0 items</span>
+    </div>
+    <div id="invBodyTransferencia"></div>
+    <div id="emptyMsgTransferencia" class="empty-msg">Aún no has escaneado nada.</div>
+  </div>
+</div>
+
+<!-- ── Ingresos (Historial): actividad de cada vendedor ── -->
+<div id="viewIngresos" style="display:none">
+  <div class="card">
+    <div class="card-header">
+      <strong>Historial</strong>
+      <span class="count-badge" id="ingresosCountBadge">0</span>
+    </div>
+    <div id="ingresosBody"></div>
+    <div id="ingresosEmptyMsg" class="empty-msg">Aún no hay actividad guardada.</div>
+  </div>
+</div>
+
+<!-- ── Stock: revisar catálogo y contar físico de una tienda ── -->
+<div id="viewStock" style="display:none">
+  <div class="card">
+    <label>Tienda a consultar</label>
+    <select id="stockTiendaSelect"></select>
+  </div>
+
+  <div class="card" id="stockResultsCard" style="display:none">
+    <button id="btnScanStock" class="btn-primary btn-full">📷 Escanear código</button>
+
+    <div class="card-header" style="margin-top:14px;">
+      <strong id="stockTitle">Stock</strong>
+      <span class="count-badge" id="stockCountBadge">0</span>
+    </div>
+    <input type="text" id="stockSearch" placeholder="Buscar por código o nombre..." style="margin-bottom:10px;" />
+    <div id="stockStatus" class="status"></div>
+    <div class="table-scroll">
+      <table id="stockTable">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Stock</th>
+            <th>Precio</th>
+            <th>Cantidad</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="stockBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Más: configuración / identidad ── -->
+<div id="viewMas" style="display:none">
+  <div class="card" id="sheetConfigCard">
+    <label>URL de Google Sheets (Apps Script /exec)</label>
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" />
+      <button id="saveSheetUrl" class="btn-primary" style="flex:0 0 auto; padding:8px 14px;">Guardar</button>
+    </div>
+    <div class="status" id="sheetStatus">No configurado. Los datos solo se guardan en este celular.</div>
+  </div>
+  <div class="card" id="identityCard">
+    <div class="status" id="identityStatus"></div>
+  </div>
+</div>
+
+<!-- ── Modal de escaneo (compartido) ── -->
+<div id="scannerModal" class="modal-overlay" style="display:none">
+  <div class="modal-card">
+    <div class="modal-header">
+      <strong id="scannerModalTitle">Escanear código</strong>
+      <button id="scannerCloseBtn" class="modal-close">✕</button>
+    </div>
+    <div id="reader"></div>
+    <div id="scannerStatus" class="status">Apunta al código de barras.</div>
+  </div>
+</div>
+
+<!-- ── Navegación inferior ── -->
+<div class="bottom-nav">
+  <button id="navAbastecimiento" class="nav-btn"><span class="nav-icon">📦</span>Abastecimiento</button>
+  <button id="navTransferencias" class="nav-btn"><span class="nav-icon">🔄</span>Transferencias</button>
+  <button id="navIngresos" class="nav-btn"><span class="nav-icon">📜</span>Ingresos</button>
+  <button id="navStock" class="nav-btn"><span class="nav-icon">📊</span>Stock</button>
+  <button id="navMas" class="nav-btn"><span class="nav-icon">⋯</span>Más</button>
+</div>
+
+<script>
+// ── Identidad por vendedor ────────────────────────────────────────
+// Link de vendedor:  ?v=NombreDelVendedor   → solo puede escanear/editar,
+//                    no ve la config de Google Sheets ni puede borrar.
+// Link de admin:     ?admin=1  (con o sin ?v=...) → control total.
+// Sin parámetros (link de siempre) → se comporta igual que antes
+// (control total), para no perder continuidad con lo ya probado.
+const urlParams = new URLSearchParams(window.location.search);
+const adminAttempted = urlParams.get('admin') === '1';
+const ADMIN_PIN = '301270';
+const ADMIN_OK_KEY = 'inventario_admin_ok';
+
+let isAdmin = false;
+if (adminAttempted) {
+  if (localStorage.getItem(ADMIN_OK_KEY) === '1') {
+    isAdmin = true;
+  } else {
+    const enteredPin = prompt('Modo administrador — ingresa el PIN:');
+    if (enteredPin === ADMIN_PIN) {
+      isAdmin = true;
+      localStorage.setItem(ADMIN_OK_KEY, '1');
+    } else {
+      alert('PIN incorrecto. Se continuará en modo restringido.');
+    }
+  }
+}
+
+const vendedorParam = (urlParams.get('v') || '').trim();
+const VENDEDOR_KEY = 'inventario_vendedor_actual';
+let vendedorName = vendedorParam || localStorage.getItem(VENDEDOR_KEY) || '';
+if (vendedorParam) localStorage.setItem(VENDEDOR_KEY, vendedorParam);
+
+// Si intentaron entrar como admin y el PIN falló, quedan en modo
+// restringido siempre (no caen de vuelta al link "de siempre" con
+// acceso total, aunque no hayan puesto ?v=).
+const restrictedMode = adminAttempted ? !isAdmin : (!!vendedorParam && !isAdmin);
+
+function slugify(s) {
+  return (s || 'sin_nombre').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '_');
+}
+
+// Cada vendedor tiene su propio almacenamiento local, así ningún
+// celular/sesión pisa los datos de otro. Si no hay identidad (link
+// de siempre, sin parámetros), se usan las claves originales.
+const identity = vendedorParam || (isAdmin ? 'admin' : (adminAttempted ? 'bloqueado' : ''));
+const STORAGE_KEY = identity ? ('inventario_escaner_v4_' + slugify(identity)) : 'inventario_escaner_v2';
+const ORIGENES = [
+  'TIENDA DE ANCASH',
+  'TIENDA DE CAJAMARCA',
+  'TIENDA DE MANTARO',
+  'ALMACÉN GENERAL'
+];
+
+// Cada sección (Abastecimiento / Transferencias) tiene su propio
+// contador de "Lista", independiente entre sí. El contador de
+// Transferencias hereda el valor del contador único que existía antes
+// del rediseño, para no perder continuidad con lo ya usado.
+const LISTA_KEY_TRANSFERENCIA = identity ? ('inventario_lista_transferencia_v1_' + slugify(identity)) : 'inventario_lista_transferencia_v1';
+const LISTA_KEY_ABASTECIMIENTO = identity ? ('inventario_lista_abastecimiento_v1_' + slugify(identity)) : 'inventario_lista_abastecimiento_v1';
+const OLD_LISTA_KEY = identity ? ('inventario_lista_actual_v2_' + slugify(identity)) : 'inventario_lista_actual';
+
+let currentListaTransferencia = parseInt(localStorage.getItem(LISTA_KEY_TRANSFERENCIA) || localStorage.getItem(OLD_LISTA_KEY) || '1', 10);
+let currentListaAbastecimiento = parseInt(localStorage.getItem(LISTA_KEY_ABASTECIMIENTO) || '1', 10);
+
+// tipo: 'transferencia' (mover entre 2 tiendas) | 'abastecimiento'
+// (reponer 1 sola tienda). Los datos guardados antes de este cambio
+// no tienen "tipo": se asumen como 'transferencia' (es lo único que
+// existía).
+let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+  .map(it => ({
+    ...it,
+    id: it.id || (Date.now().toString(36) + Math.random().toString(36).slice(2)),
+    lista: it.lista || 1,
+    vendedor: it.vendedor || vendedorName || 'Sin asignar',
+    stockLoaded: it.stockLoaded !== undefined ? it.stockLoaded : true,
+    tipo: it.tipo || 'transferencia'
+  }));
+
+let lastScan = { code: null, time: 0 };
+
+function genId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+// ── Referencias DOM ────────────────────────────────────────────────
+const mainTitle = document.getElementById('mainTitle');
+
+const abastecimientoTiendaSelect = document.getElementById('abastecimientoTiendaSelect');
+const stockTotalAbastecimiento = document.getElementById('stockTotalAbastecimiento');
+const btnScanAbastecimiento = document.getElementById('btnScanAbastecimiento');
+const btnNuevaListaAbastecimiento = document.getElementById('btnNuevaListaAbastecimiento');
+const totalsAbastecimiento = document.getElementById('totalsAbastecimiento');
+const invBodyAbastecimiento = document.getElementById('invBodyAbastecimiento');
+const emptyMsgAbastecimiento = document.getElementById('emptyMsgAbastecimiento');
+const countBadgeAbastecimiento = document.getElementById('countBadgeAbastecimiento');
+const listaAbastecimientoNum = document.getElementById('listaAbastecimientoNum');
+
+const origenSalidaSel = document.getElementById('origenSalida');
+const origenEntradaSel = document.getElementById('origenEntrada');
+const stockTotalTransferencias = document.getElementById('stockTotalTransferencias');
+const btnScanTransferencia = document.getElementById('btnScanTransferencia');
+const btnNuevaListaTransferencia = document.getElementById('btnNuevaListaTransferencia');
+const totalsTransferencia = document.getElementById('totalsTransferencia');
+const invBodyTransferencia = document.getElementById('invBodyTransferencia');
+const emptyMsgTransferencia = document.getElementById('emptyMsgTransferencia');
+const countBadgeTransferencia = document.getElementById('countBadgeTransferencia');
+const listaTransferenciaNum = document.getElementById('listaTransferenciaNum');
+
+const ingresosBody = document.getElementById('ingresosBody');
+const ingresosEmptyMsg = document.getElementById('ingresosEmptyMsg');
+const ingresosCountBadge = document.getElementById('ingresosCountBadge');
+
+const stockTiendaSelect = document.getElementById('stockTiendaSelect');
+const stockResultsCard = document.getElementById('stockResultsCard');
+const stockTitle = document.getElementById('stockTitle');
+const stockCountBadge = document.getElementById('stockCountBadge');
+const stockSearch = document.getElementById('stockSearch');
+const stockStatus = document.getElementById('stockStatus');
+const stockBody = document.getElementById('stockBody');
+const btnScanStock = document.getElementById('btnScanStock');
+
+const sheetConfigCard = document.getElementById('sheetConfigCard');
+const sheetUrlInput = document.getElementById('sheetUrl');
+const sheetStatus = document.getElementById('sheetStatus');
+const identityStatus = document.getElementById('identityStatus');
+
+const scannerModal = document.getElementById('scannerModal');
+const scannerModalTitle = document.getElementById('scannerModalTitle');
+const scannerCloseBtn = document.getElementById('scannerCloseBtn');
+const scannerStatus = document.getElementById('scannerStatus');
+
+if (vendedorName) {
+  mainTitle.textContent = '📦 Escáner — ' + vendedorName;
+}
+if (restrictedMode) {
+  sheetConfigCard.style.display = 'none';
+}
+identityStatus.textContent = vendedorName
+  ? ('Conectado como: ' + vendedorName + (isAdmin ? ' (admin)' : ''))
+  : (isAdmin ? 'Conectado como administrador.' : 'Enlace general (sin identidad de vendedor).');
+
+// ── Navegación inferior ─────────────────────────────────────────────
+const viewAbastecimiento = document.getElementById('viewAbastecimiento');
+const viewTransferencias = document.getElementById('viewTransferencias');
+const viewIngresos = document.getElementById('viewIngresos');
+const viewStock = document.getElementById('viewStock');
+const viewMas = document.getElementById('viewMas');
+
+const navMap = {
+  abastecimiento: { btn: document.getElementById('navAbastecimiento'), view: viewAbastecimiento },
+  transferencias: { btn: document.getElementById('navTransferencias'), view: viewTransferencias },
+  ingresos: { btn: document.getElementById('navIngresos'), view: viewIngresos },
+  stock: { btn: document.getElementById('navStock'), view: viewStock },
+  mas: { btn: document.getElementById('navMas'), view: viewMas }
+};
+
+function activateNav(key) {
+  Object.keys(navMap).forEach(k => {
+    const active = k === key;
+    navMap[k].btn.classList.toggle('nav-active', active);
+    navMap[k].view.style.display = active ? 'block' : 'none';
+  });
+  if (scannerRunning) closeScanner();
+  if (key === 'ingresos') renderIngresos();
+}
+Object.keys(navMap).forEach(k => navMap[k].btn.addEventListener('click', () => activateNav(k)));
+
+// ── Google Sheets: config y sincronización ──────────────────────────
+const SHEET_URL_KEY = 'inventario_sheet_url';
+const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzdWFB8w0460cNdqjTbpc8_Xuo0iTOcwm7dCKLc0TtEFAE_iBy_GoLeMLkNr_qa6-3G/exec';
+let sheetUrl = localStorage.getItem(SHEET_URL_KEY) || DEFAULT_SHEET_URL;
+sheetUrlInput.value = sheetUrl;
+updateSheetStatus('idle');
+
+function updateSheetStatus(state) {
+  if (!sheetUrl) {
+    sheetStatus.textContent = 'No configurado. Los datos solo se guardan en este celular.';
+    return;
+  }
+  if (state === 'syncing') sheetStatus.textContent = 'Sincronizando con Google Sheets...';
+  else if (state === 'ok') sheetStatus.textContent = '✅ Sincronizado con Google Sheets.';
+  else if (state === 'error') sheetStatus.textContent = '⚠️ No se pudo sincronizar (revisa la URL o tu conexión).';
+  else sheetStatus.textContent = 'Conectado a Google Sheets.';
+}
+
+document.getElementById('saveSheetUrl').addEventListener('click', () => {
+  sheetUrl = sheetUrlInput.value.trim();
+  localStorage.setItem(SHEET_URL_KEY, sheetUrl);
+  updateSheetStatus('idle');
+  if (sheetUrl) pullFromSheet();
+});
+
+// Nunca borra ni reescribe toda la hoja: solo agrega/actualiza la fila
+// puntual identificada por item.id.
+async function syncItem(item, action) {
+  if (!sheetUrl || !item) return;
+  updateSheetStatus('syncing');
+  try {
+    await fetch(sheetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: action || 'upsert', item })
+    });
+    updateSheetStatus('ok');
+  } catch (err) {
+    updateSheetStatus('error');
+  }
+}
+
+let itemSyncTimers = {};
+function scheduleItemSync(idx) {
+  if (!sheetUrl) return;
+  clearTimeout(itemSyncTimers[idx]);
+  itemSyncTimers[idx] = setTimeout(() => syncItem(items[idx], 'upsert'), 800);
+}
+
+// Solo trae datos de la hoja si el celular no tiene nada guardado
+// localmente (celular nuevo o caché borrada). Así nunca sobrescribe
+// la hoja con una lista vacía.
+async function pullFromSheet() {
+  if (!sheetUrl) return;
+  updateSheetStatus('syncing');
+  try {
+    const res = await fetch(sheetUrl, { method: 'GET' });
+    const data = await res.json();
+    if (data && Array.isArray(data.items) && items.length === 0) {
+      let pulled = data.items.map(it => ({
+        ...it,
+        id: it.id || genId(),
+        lista: it.lista || 1,
+        vendedor: it.vendedor || 'Sin asignar',
+        stockLoaded: true,
+        tipo: it.tipo || 'transferencia'
+      }));
+
+      // Un link de vendedor solo debe ver su propio historial, no el
+      // de todo el equipo.
+      if (vendedorParam) {
+        pulled = pulled.filter(it => it.vendedor === vendedorParam);
+      }
+      items = pulled;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+
+      // Siempre arranca en una lista nueva y vacía por sección, aunque
+      // ya exista historial: así la pantalla de escaneo nunca aparece
+      // con productos de una lista anterior ya cerrada.
+      const maxTransferencia = items.filter(it => it.tipo === 'transferencia').reduce((m, it) => Math.max(m, it.lista || 1), 0);
+      if (maxTransferencia >= currentListaTransferencia) {
+        currentListaTransferencia = maxTransferencia + 1;
+        localStorage.setItem(LISTA_KEY_TRANSFERENCIA, currentListaTransferencia);
+      }
+      const maxAbastecimiento = items.filter(it => it.tipo === 'abastecimiento').reduce((m, it) => Math.max(m, it.lista || 1), 0);
+      if (maxAbastecimiento >= currentListaAbastecimiento) {
+        currentListaAbastecimiento = maxAbastecimiento + 1;
+        localStorage.setItem(LISTA_KEY_ABASTECIMIENTO, currentListaAbastecimiento);
+      }
+      renderAbastecimiento();
+      renderTransferencia();
+    }
+    updateSheetStatus('ok');
+  } catch (err) {
+    updateSheetStatus('error');
+  }
+}
+
+// Busca el nombre del producto (hoja "Productos") y el stock
+// registrado para la tienda de destino (hoja "Stock"), en una sola
+// llamada: /exec?code=XXXX&tienda=YYYY
+async function lookupProductInfo(code, tienda) {
+  if (!sheetUrl) return { name: null, stock: null };
+  try {
+    const url = sheetUrl + '?code=' + encodeURIComponent(code) + '&tienda=' + encodeURIComponent(tienda || '');
+    const res = await fetch(url);
+    const data = await res.json();
+    return {
+      name: data && data.name ? data.name : null,
+      stock: data && (data.stock === 0 || data.stock) ? data.stock : null
+    };
+  } catch (err) {
+    return { name: null, stock: null };
+  }
+}
+
+// Trae el total de stock (base + entradas registradas) de una tienda,
+// sin traer todo el catálogo — solo el número agregado.
+async function fetchAndShowStockTotal(tienda, targetEl) {
+  if (!tienda || !sheetUrl) {
+    targetEl.style.display = 'none';
+    return;
+  }
+  targetEl.style.display = 'block';
+  targetEl.textContent = 'Cargando stock total de ' + tienda + '...';
+  try {
+    const res = await fetch(sheetUrl + '?totalStockTienda=' + encodeURIComponent(tienda));
+    const data = await res.json();
+    if (data && data.status === 'ok') {
+      targetEl.textContent = `📦 Stock total en ${tienda}: ${data.totalUnidades} unidades (${data.totalProductos} productos)`;
+    } else {
+      targetEl.textContent = 'No se pudo obtener el stock total.';
+    }
+  } catch (err) {
+    targetEl.textContent = 'No se pudo obtener el stock total.';
+  }
+}
+
+function fillOrigenSelect(sel) {
+  sel.innerHTML = '<option value="">-- Selecciona --</option>' +
+    ORIGENES.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+fillOrigenSelect(abastecimientoTiendaSelect);
+fillOrigenSelect(origenSalidaSel);
+fillOrigenSelect(origenEntradaSel);
+fillOrigenSelect(stockTiendaSelect);
+
+function checkAbastecimientoListo() {
+  btnScanAbastecimiento.disabled = !abastecimientoTiendaSelect.value;
+}
+abastecimientoTiendaSelect.addEventListener('change', () => {
+  checkAbastecimientoListo();
+  fetchAndShowStockTotal(abastecimientoTiendaSelect.value, stockTotalAbastecimiento);
+});
+
+// La cámara de Transferencias solo se habilita cuando ambas tiendas
+// (origen y destino) ya fueron elegidas explícitamente.
+function checkTransferenciaListo() {
+  btnScanTransferencia.disabled = !(origenSalidaSel.value && origenEntradaSel.value);
+}
+origenSalidaSel.addEventListener('change', checkTransferenciaListo);
+origenEntradaSel.addEventListener('change', () => {
+  checkTransferenciaListo();
+  fetchAndShowStockTotal(origenEntradaSel.value, stockTotalTransferencias);
+});
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
+function computeTotals(list) {
+  return {
+    productos: list.length,
+    unidades: list.reduce((s, i) => s + (parseInt(i.qty, 10) || 0), 0)
+  };
+}
+
+// Arma el HTML de una tarjeta de producto. stockEditable=false muestra
+// el Stock como texto de solo lectura (para Abastecimiento); true lo
+// muestra como campo editable con steppers (para Transferencias).
+function buildItemCardHtml(item, idx, stockEditable) {
+  const stockField = stockEditable
+    ? `<div class="qty-stepper">
+        <button type="button" class="step-btn" data-idx="${idx}" data-field="stock" data-delta="-1">−</button>
+        <input type="number" min="0" value="${item.stock}" data-idx="${idx}" data-field="stock" />
+        <button type="button" class="step-btn" data-idx="${idx}" data-field="stock" data-delta="1">+</button>
+      </div>`
+    : `<div class="stock-readonly">${item.stock}</div>`;
+  const tiendaLabel = item.origenEntrada ? ` <span class="item-tienda">| ${item.origenEntrada}</span>` : '';
+  return `
+    <div class="item-card">
+      <div class="item-top">
+        <span class="item-code">${item.code}${tiendaLabel}</span>
+        ${restrictedMode ? '' : `<button class="del-btn" data-idx="${idx}">✕</button>`}
+      </div>
+      <input class="item-name" type="text" value="${(item.name || '').replace(/"/g,'&quot;')}" data-idx="${idx}" data-field="name" placeholder="Buscando..." />
+      <div class="item-bottom">
+        <div>
+          <label>Cant.</label>
+          <div class="qty-stepper">
+            <button type="button" class="step-btn" data-idx="${idx}" data-field="qty" data-delta="-1">−</button>
+            <input type="number" min="0" value="${item.qty}" data-idx="${idx}" data-field="qty" />
+            <button type="button" class="step-btn" data-idx="${idx}" data-field="qty" data-delta="1">+</button>
+          </div>
+        </div>
+        <div>
+          <label>Stock</label>
+          ${stockField}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderAbastecimiento() {
+  listaAbastecimientoNum.textContent = currentListaAbastecimiento;
+  const visibleIdx = [];
+  for (let idx = 0; idx < items.length; idx++) {
+    if (items[idx].lista === currentListaAbastecimiento && items[idx].tipo === 'abastecimiento') visibleIdx.push(idx);
+  }
+  emptyMsgAbastecimiento.style.display = visibleIdx.length === 0 ? 'block' : 'none';
+  let html = '';
+  for (let k = visibleIdx.length - 1; k >= 0; k--) {
+    html += buildItemCardHtml(items[visibleIdx[k]], visibleIdx[k], false);
+  }
+  invBodyAbastecimiento.innerHTML = html;
+  const totals = computeTotals(visibleIdx.map(i => items[i]));
+  countBadgeAbastecimiento.textContent = totals.productos + (totals.productos === 1 ? ' item' : ' items');
+  totalsAbastecimiento.textContent = `📦 Total productos: ${totals.productos} · Total unidades: ${totals.unidades}`;
+}
+
+function renderTransferencia() {
+  listaTransferenciaNum.textContent = currentListaTransferencia;
+  const visibleIdx = [];
+  for (let idx = 0; idx < items.length; idx++) {
+    if (items[idx].lista === currentListaTransferencia && items[idx].tipo === 'transferencia') visibleIdx.push(idx);
+  }
+  emptyMsgTransferencia.style.display = visibleIdx.length === 0 ? 'block' : 'none';
+  let html = '';
+  for (let k = visibleIdx.length - 1; k >= 0; k--) {
+    html += buildItemCardHtml(items[visibleIdx[k]], visibleIdx[k], true);
+  }
+  invBodyTransferencia.innerHTML = html;
+  const totals = computeTotals(visibleIdx.map(i => items[i]));
+  countBadgeTransferencia.textContent = totals.productos + (totals.productos === 1 ? ' item' : ' items');
+  totalsTransferencia.textContent = `📦 Total productos: ${totals.productos} · Total unidades: ${totals.unidades}`;
+}
+
+// Agrupa por (lista + tipo) para mostrar el historial de cada sección
+// por separado, distinguiendo si fue una reposición (Abastecimiento)
+// o un movimiento entre tiendas (Transferencias).
+function renderIngresos() {
+  const groups = {};
+  items.forEach(it => {
+    const tipo = it.tipo || 'transferencia';
+    const key = (it.lista || 1) + '|' + tipo;
+    if (!groups[key]) groups[key] = { lista: it.lista || 1, tipo, count: 0, qty: 0 };
+    groups[key].count += 1;
+    groups[key].qty += (parseInt(it.qty, 10) || 0);
+  });
+
+  const keys = Object.keys(groups).sort((a, b) => {
+    const ga = groups[a], gb = groups[b];
+    if (gb.lista !== ga.lista) return gb.lista - ga.lista;
+    return ga.tipo < gb.tipo ? -1 : 1;
+  });
+
+  ingresosBody.innerHTML = '';
+  ingresosEmptyMsg.style.display = keys.length === 0 ? 'block' : 'none';
+
+  keys.forEach(k => {
+    const g = groups[k];
+    const tipoLabel = g.tipo === 'abastecimiento' ? '📦 Abastecimiento' : '🔄 Transferencia';
+    const enCurso = (g.tipo === 'abastecimiento' && g.lista === currentListaAbastecimiento) ||
+                    (g.tipo === 'transferencia' && g.lista === currentListaTransferencia);
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.innerHTML = `
+      <div class="item-top">
+        <span class="item-name" style="margin:0;">Lista ${g.lista} — ${tipoLabel}${enCurso ? ' (en curso)' : ''}</span>
+      </div>
+      <div class="ingreso-sub">${g.count} producto${g.count === 1 ? '' : 's'} distintos · ${g.qty} unidad${g.qty === 1 ? '' : 'es'} en total</div>
+    `;
+    ingresosBody.appendChild(card);
+  });
+
+  ingresosCountBadge.textContent = keys.length;
+}
+
+// ── Eventos de las tarjetas de producto (compartidos entre las dos
+// listas, ambas leen/escriben sobre el mismo arreglo global items[]) ──
+function attachCardEvents(container, rerenderFn) {
+  container.addEventListener('input', (e) => {
+    const idx = e.target.getAttribute('data-idx');
+    const field = e.target.getAttribute('data-field');
+    if (idx === null) return;
+    if (field === 'qty' || field === 'stock') {
+      items[idx][field] = parseInt(e.target.value, 10) || 0;
+    } else {
+      items[idx][field] = e.target.value;
+    }
+    save();
+    scheduleItemSync(idx);
+  });
+
+  container.addEventListener('click', (e) => {
+    if (e.target.classList.contains('step-btn')) {
+      const idx = e.target.getAttribute('data-idx');
+      const field = e.target.getAttribute('data-field');
+      const delta = parseInt(e.target.getAttribute('data-delta'), 10);
+      const current = parseInt(items[idx][field], 10) || 0;
+      items[idx][field] = Math.max(0, current + delta);
+      save();
+      renderAbastecimiento();
+      renderTransferencia();
+      scheduleItemSync(idx);
+      return;
+    }
+    if (e.target.classList.contains('del-btn')) {
+      const idx = e.target.getAttribute('data-idx');
+      const removed = items[idx];
+      items.splice(idx, 1);
+      save();
+      renderAbastecimiento();
+      renderTransferencia();
+      syncItem(removed, 'delete');
+    }
+  });
+}
+attachCardEvents(invBodyAbastecimiento);
+attachCardEvents(invBodyTransferencia);
+
+btnNuevaListaAbastecimiento.addEventListener('click', () => {
+  const enCurso = items.filter(i => i.lista === currentListaAbastecimiento && i.tipo === 'abastecimiento');
+  if (enCurso.length === 0) {
+    alert('La lista actual está vacía. Escanea al menos un producto antes de guardarla.');
+    return;
+  }
+  currentListaAbastecimiento += 1;
+  localStorage.setItem(LISTA_KEY_ABASTECIMIENTO, currentListaAbastecimiento);
+  renderAbastecimiento();
+});
+
+btnNuevaListaTransferencia.addEventListener('click', () => {
+  const enCurso = items.filter(i => i.lista === currentListaTransferencia && i.tipo === 'transferencia');
+  if (enCurso.length === 0) {
+    alert('La lista actual está vacía. Escanea al menos un producto antes de guardarla.');
+    return;
+  }
+  currentListaTransferencia += 1;
+  localStorage.setItem(LISTA_KEY_TRANSFERENCIA, currentListaTransferencia);
+  renderTransferencia();
+});
+
+// ── Escaneo: Abastecimiento (reponer 1 tienda, stock de solo lectura) ──
+function addScanAbastecimiento(code) {
+  const now = Date.now();
+  if (code === lastScan.code && (now - lastScan.time) < 2000) return;
+  lastScan = { code, time: now };
+
+  const tienda = abastecimientoTiendaSelect.value;
+  const existing = items.find(i => i.code === code && i.lista === currentListaAbastecimiento && i.tipo === 'abastecimiento' && i.origenEntrada === tienda);
+  let touched;
+  if (existing) {
+    existing.qty += 1;
+    touched = existing;
+    scannerStatus.textContent = `Código ${code} ya existía, cantidad +1`;
+  } else {
+    touched = { id: genId(), code, name: '', stockLoaded: false, lista: currentListaAbastecimiento, vendedor: vendedorName || 'Sin asignar', tipo: 'abastecimiento', origenSalida: '', origenEntrada: tienda, qty: 1, stock: 0 };
+    items.push(touched);
+    scannerStatus.textContent = `Código escaneado: ${code}. Buscando nombre y stock...`;
+  }
+  save();
+  renderAbastecimiento();
+  syncItem(touched, 'upsert');
+  if (navigator.vibrate) navigator.vibrate(100);
+
+  if (!touched.name || !touched.stockLoaded) {
+    lookupProductInfo(code, tienda).then(info => {
+      let changed = false;
+      if (info.name && !touched.name) { touched.name = info.name; changed = true; }
+      if (!touched.stockLoaded) {
+        if (info.stock !== null) touched.stock = info.stock;
+        touched.stockLoaded = true;
+        changed = true;
+      }
+      if (changed) {
+        save();
+        renderAbastecimiento();
+        syncItem(touched, 'upsert');
+      }
+      scannerStatus.textContent = info.name
+        ? `Código escaneado: ${code} — ${info.name}`
+        : `Código escaneado: ${code} (no encontrado en la base de datos)`;
+    });
+  }
+}
+
+// ── Escaneo: Transferencias (origen → destino, stock editable) ──
+function addScanTransferencia(code) {
+  const now = Date.now();
+  if (code === lastScan.code && (now - lastScan.time) < 2000) return;
+  lastScan = { code, time: now };
+
+  const origenSalida = origenSalidaSel.value;
+  const origenEntrada = origenEntradaSel.value;
+
+  const existing = items.find(i => i.code === code && i.lista === currentListaTransferencia && i.tipo === 'transferencia' && i.origenSalida === origenSalida && i.origenEntrada === origenEntrada);
+  let touched;
+  if (existing) {
+    existing.qty += 1;
+    touched = existing;
+    scannerStatus.textContent = `Código ${code} ya existía, cantidad +1`;
+  } else {
+    touched = { id: genId(), code, name: '', stockLoaded: false, lista: currentListaTransferencia, vendedor: vendedorName || 'Sin asignar', tipo: 'transferencia', origenSalida, origenEntrada, qty: 1, stock: 0 };
+    items.push(touched);
+    scannerStatus.textContent = `Código escaneado: ${code}. Buscando nombre y stock...`;
+  }
+  save();
+  renderTransferencia();
+  syncItem(touched, 'upsert');
+  if (navigator.vibrate) navigator.vibrate(100);
+
+  // El stock se busca para la tienda de destino: es el dato más útil
+  // al recibir mercadería ahí.
+  if (!touched.name || !touched.stockLoaded) {
+    lookupProductInfo(code, touched.origenEntrada).then(info => {
+      let changed = false;
+      if (info.name && !touched.name) { touched.name = info.name; changed = true; }
+      if (!touched.stockLoaded) {
+        if (info.stock !== null) touched.stock = info.stock;
+        touched.stockLoaded = true;
+        changed = true;
+      }
+      if (changed) {
+        save();
+        renderTransferencia();
+        syncItem(touched, 'upsert');
+      }
+      scannerStatus.textContent = info.name
+        ? `Código escaneado: ${code} — ${info.name}`
+        : `Código escaneado: ${code} (no encontrado en la base de datos)`;
+    });
+  }
+}
+
+// ── Pestaña Stock: catálogo completo + conteo físico de una tienda ──
+let stockData = [];
+
+function renderStockTable(filterText) {
+  const q = (filterText || '').trim().toLowerCase();
+  const filtered = q
+    ? stockData.filter(p => p.codigo.toLowerCase().includes(q) || (p.nombre || '').toLowerCase().includes(q))
+    : stockData;
+
+  stockCountBadge.textContent = filtered.length + ' / ' + stockData.length;
+
+  if (filtered.length === 0) {
+    stockBody.innerHTML = '';
+    stockStatus.textContent = stockData.length === 0
+      ? 'No hay productos registrados para esta tienda.'
+      : 'Ningún producto coincide con la búsqueda.';
+    return;
+  }
+  stockStatus.textContent = '';
+
+  // Se arma todo el HTML de una sola vez (mucho más rápido que
+  // agregar fila por fila cuando hay miles de productos).
+  let html = '';
+  for (let i = 0; i < filtered.length; i++) {
+    const p = filtered[i];
+    // El código sigue viajando en data-codigo (se usa internamente
+    // para buscar, filtrar y guardar), pero ya no se muestra como
+    // columna al vendedor.
+    html += `<tr data-codigo="${p.codigo}">
+      <td>${(p.nombre || '').replace(/</g, '&lt;')}</td>
+      <td>${p.cantidadTotal}</td>
+      <td>
+        <div class="qty-stepper stepper-sm">
+          <button type="button" class="step-btn-codigo" data-codigo="${p.codigo}" data-field="precio" data-delta="-0.5">−</button>
+          <input type="number" class="precio-input" data-codigo="${p.codigo}" value="${Number(p.precio) || 0}" min="0" step="0.01" />
+          <button type="button" class="step-btn-codigo" data-codigo="${p.codigo}" data-field="precio" data-delta="0.5">+</button>
+        </div>
+      </td>
+      <td>
+        <div class="qty-stepper stepper-sm">
+          <button type="button" class="step-btn-codigo" data-codigo="${p.codigo}" data-field="conteo" data-delta="-1">−</button>
+          <input type="number" class="conteo-input" data-codigo="${p.codigo}" min="0" placeholder="0" />
+          <button type="button" class="step-btn-codigo" data-codigo="${p.codigo}" data-field="conteo" data-delta="1">+</button>
+        </div>
+      </td>
+      <td><button class="guardar-conteo-btn" data-codigo="${p.codigo}" style="flex:0 0 auto; padding:4px 8px;">💾</button></td>
+    </tr>`;
+  }
+  stockBody.innerHTML = html;
+}
+
+// Guarda el conteo físico como fila nueva en la hoja "Conteos" (nunca
+// sobrescribe conteos anteriores: queda un historial completo).
+async function saveConteoFisico(p, valor, precio, tienda) {
+  if (!sheetUrl) return false;
+  try {
+    await fetch(sheetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'conteo',
+        item: {
+          tienda: tienda,
+          codigo: p.codigo,
+          nombre: p.nombre,
+          stockSistema: p.stock,
+          cantidadTotalSistema: p.cantidadTotal,
+          conteoFisico: valor,
+          precio: precio,
+          vendedor: vendedorName || 'Sin asignar'
+        }
+      })
+    });
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+stockBody.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('step-btn-codigo')) {
+    const codigo = e.target.getAttribute('data-codigo');
+    const field = e.target.getAttribute('data-field');
+    const delta = parseFloat(e.target.getAttribute('data-delta'));
+    const selector = field === 'precio' ? '.precio-input' : '.conteo-input';
+    const input = stockBody.querySelector(`${selector}[data-codigo="${CSS.escape(codigo)}"]`);
+    if (!input) return;
+    const current = parseFloat(input.value) || 0;
+    const next = Math.max(0, current + delta);
+    input.value = field === 'precio' ? next.toFixed(2) : Math.round(next);
+    return;
+  }
+
+  if (!e.target.classList.contains('guardar-conteo-btn')) return;
+  const codigo = e.target.getAttribute('data-codigo');
+  const cantInput = stockBody.querySelector(`.conteo-input[data-codigo="${CSS.escape(codigo)}"]`);
+  const precioInput = stockBody.querySelector(`.precio-input[data-codigo="${CSS.escape(codigo)}"]`);
+  const valor = cantInput ? parseInt(cantInput.value, 10) : NaN;
+  if (isNaN(valor)) {
+    alert('Ingresa la cantidad contada antes de guardar.');
+    return;
+  }
+  const precio = precioInput ? parseFloat(precioInput.value) : NaN;
+  if (isNaN(precio)) {
+    alert('Ingresa un precio válido antes de guardar.');
+    return;
+  }
+  const p = stockData.find(x => x.codigo === codigo);
+  if (!p) return;
+
+  const originalText = e.target.textContent;
+  e.target.disabled = true;
+  e.target.textContent = '...';
+  const ok = await saveConteoFisico(p, valor, precio, stockTiendaSelect.value);
+  e.target.disabled = false;
+  if (ok) {
+    e.target.textContent = '✅';
+    setTimeout(() => { e.target.textContent = originalText; }, 1500);
+  } else {
+    e.target.textContent = originalText;
+    alert('No se pudo guardar el conteo. Revisa tu conexión.');
+  }
+});
+
+stockSearch.addEventListener('input', () => renderStockTable(stockSearch.value));
+
+stockTiendaSelect.addEventListener('change', async () => {
+  const tienda = stockTiendaSelect.value;
+  if (!tienda) {
+    stockResultsCard.style.display = 'none';
+    return;
+  }
+  if (!sheetUrl) {
+    alert('No hay una URL de Google Sheets configurada.');
+    return;
+  }
+  stockResultsCard.style.display = 'block';
+  stockTitle.textContent = 'Stock — ' + tienda;
+  stockSearch.value = '';
+  stockBody.innerHTML = '';
+  stockStatus.textContent = 'Cargando catálogo de la tienda...';
+  stockCountBadge.textContent = '...';
+  try {
+    const res = await fetch(sheetUrl + '?stockTienda=' + encodeURIComponent(tienda));
+    const data = await res.json();
+    stockData = (data && Array.isArray(data.productos)) ? data.productos : [];
+    renderStockTable('');
+  } catch (err) {
+    stockData = [];
+    stockStatus.textContent = '⚠️ No se pudo cargar el stock. Revisa tu conexión.';
+    stockCountBadge.textContent = '0';
+  }
+});
+
+// ── Modal de escaneo compartido (Abastecimiento / Transferencias / Stock) ──
+let scannerQr = null;
+let scannerRunning = false;
+let scannerContext = null;
+
+async function openScanner(context, title) {
+  scannerContext = context;
+  scannerModalTitle.textContent = title || 'Escanear código';
+  scannerStatus.textContent = 'Iniciando cámara...';
+  scannerModal.style.display = 'flex';
+  scannerQr = new Html5Qrcode("reader");
+  try {
+    await scannerQr.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 220, height: 130 },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.QR_CODE
+        ]
+      },
+      (decodedText) => onScanDecoded(decodedText),
+      () => {}
+    );
+    scannerRunning = true;
+    scannerStatus.textContent = 'Cámara activa. Apunta al código de barras.';
+  } catch (err) {
+    scannerStatus.textContent = 'No se pudo acceder a la cámara: ' + err;
+  }
+}
+
+async function closeScanner() {
+  if (scannerQr && scannerRunning) {
+    try { await scannerQr.stop(); scannerQr.clear(); } catch (err) {}
+  }
+  scannerRunning = false;
+  scannerModal.style.display = 'none';
+  scannerContext = null;
+}
+scannerCloseBtn.addEventListener('click', closeScanner);
+
+function onScanDecoded(code) {
+  // Normaliza el texto leído (algunos lectores agregan espacios o
+  // saltos de línea invisibles) para que el mismo código de barras
+  // siempre se compare igual a sí mismo y sume cantidad en vez de
+  // crear una tarjeta duplicada.
+  code = (code || '').trim();
+  if (!code) return;
+  if (navigator.vibrate) navigator.vibrate(100);
+  if (scannerContext === 'abastecimiento') {
+    addScanAbastecimiento(code);
+  } else if (scannerContext === 'transferencia') {
+    addScanTransferencia(code);
+  } else if (scannerContext === 'stock') {
+    stockSearch.value = code;
+    renderStockTable(code);
+    closeScanner();
+  }
+}
+
+btnScanAbastecimiento.addEventListener('click', () => {
+  if (!abastecimientoTiendaSelect.value) {
+    alert('Selecciona primero la tienda a abastecer.');
+    return;
+  }
+  openScanner('abastecimiento', 'Escanear — Abastecimiento');
+});
+
+btnScanTransferencia.addEventListener('click', () => {
+  if (!origenSalidaSel.value || !origenEntradaSel.value) {
+    alert('Selecciona primero el origen y el destino.');
+    return;
+  }
+  openScanner('transferencia', 'Escanear — Transferencia');
+});
+
+btnScanStock.addEventListener('click', () => {
+  if (!stockTiendaSelect.value) {
+    alert('Selecciona primero la tienda a consultar.');
+    return;
+  }
+  openScanner('stock', 'Buscar producto');
+});
+
+// ── Arranque ──────────────────────────────────────────────────────
+checkAbastecimientoListo();
+checkTransferenciaListo();
+renderAbastecimiento();
+renderTransferencia();
+activateNav('transferencias');
+if (sheetUrl) pullFromSheet();
+</script>
+
+</body>
+</html>
