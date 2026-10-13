@@ -167,6 +167,9 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
 .dots{display:flex;justify-content:center;gap:16px}
 .dots span{width:20px;height:20px;border-radius:50%;border:3px solid var(--brand-strong)}
 .dots span.on{background:var(--brand-strong)}
+.dots.many{gap:10px}
+.dots.many span{width:18px;height:18px}
+.dots.many span:nth-child(4){margin-right:8px}
 .dots.shake{animation:shake .4s}
 @keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
 .err{color:var(--bad);font-weight:800;text-align:center;min-height:1.5em;margin:0}
@@ -226,7 +229,7 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
     <button role="tab" data-view="admin" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg><span>Administrar</span></button>
   </nav>
 
-  <div id="demo" class="demo" hidden>Modo demostración: los nombres y marcas son de ejemplo y se guardan solo en este navegador. PIN de cada vendedora: su número repetido (Ana 1111, Lucía 2222…). PIN de administración: 1234.</div>
+  <div id="demo" class="demo" hidden>Modo demostración: los nombres y marcas son de ejemplo y se guardan solo en este navegador. Para marcar usa el DNI de ejemplo de cada vendedora (Ana 70000001, Lucía 70000002…). PIN de administración: 1234.</div>
 
   <main id="view"><div class="loading">Cargando…</div></main>
 </div>
@@ -285,18 +288,18 @@ const icono = t => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const pub = c => ({ tolerancia: c.tolerancia, tiendas: c.tiendas, almuerzo: c.almuerzo ?? 60 });
 
 /* ============ Modo demostración (sin Apps Script) ============ */
-const DEMO_KEY = 'ohd-asistencia-demo-v1';
+const DEMO_KEY = 'ohd-asistencia-demo-v2';
 function crearDemo() {
   let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
   const vendedoras = [
-    ['V1', 'Ana Quispe', 'Tienda Ancash', 'Mañana', '09:00', '15:00', '1111'],
-    ['V2', 'Lucía Rojas', 'Tienda Ancash', 'Tarde', '15:00', '21:00', '2222'],
-    ['V3', 'Milagros Huamán', 'Tienda Mantaro', 'Mañana', '09:00', '15:00', '3333'],
-    ['V4', 'Karina Poma', 'Tienda Mantaro', 'Tarde', '15:00', '21:00', '4444'],
-    ['V5', 'Fiorella Ccanto', 'Tienda Cajamarca', 'Mañana', '09:00', '15:00', '5555'],
-    ['V6', 'Yesenia Ríos', 'Tienda Cajamarca', 'Tarde', '15:00', '21:00', '6666'],
-    ['V7', 'Rosa Inga', 'Tienda Mantaro', 'Mañana', '10:00', '16:00', '7777'],
-  ].map(([id, nombre, tienda, turno, entrada, salida, pin]) => ({ id, nombre, tienda, turno, entrada, salida, pin, activa: true }));
+    ['V1', 'Ana Quispe', 'Tienda Ancash', 'Mañana', '09:00', '15:00'],
+    ['V2', 'Lucía Rojas', 'Tienda Ancash', 'Tarde', '15:00', '21:00'],
+    ['V3', 'Milagros Huamán', 'Tienda Mantaro', 'Mañana', '09:00', '15:00'],
+    ['V4', 'Karina Poma', 'Tienda Mantaro', 'Tarde', '15:00', '21:00'],
+    ['V5', 'Fiorella Ccanto', 'Tienda Cajamarca', 'Mañana', '09:00', '15:00'],
+    ['V6', 'Yesenia Ríos', 'Tienda Cajamarca', 'Tarde', '15:00', '21:00'],
+    ['V7', 'Rosa Inga', 'Tienda Mantaro', 'Mañana', '10:00', '16:00'],
+  ].map(([id, nombre, tienda, turno, entrada, salida], i) => ({ id, nombre, tienda, turno, entrada, salida, dni: '7000000' + (i + 1), activa: true }));
   const marcas = []; const hoy = lima().fecha; const ahora = nowMin();
   const hm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:${String(Math.floor(rnd() * 60)).padStart(2, '0')}`;
   const push = (v, fecha, min, tipo, minTarde = 0) => {
@@ -325,7 +328,8 @@ const demoDB = () => { let d = store.get(DEMO_KEY, null); if (!d) { d = crearDem
 const demoSave = d => store.set(DEMO_KEY, d);
 const pinN = x => String(x ?? '').replace(/\D/g, '').padStart(4, '0');
 const tardanza = (ent, hora, tol) => { const d = toMin(hora) - toMin(ent); return d > tol ? d : 0; };
-const sinPin = v => { const { pin, ...r } = v; return r; };
+const dniN = x => String(x ?? '').replace(/\D/g, '').padStart(8, '0');
+const sinPin = v => { const { dni, ...r } = v; return r; };
 function demoAdmin(p) { if (pinN(p.adminPin) !== pinN(demoDB().config.adminPin)) throw new Error('PIN de administrador incorrecto'); }
 const Demo = {
   init() { const d = demoDB(), h = lima().fecha; return { config: pub(d.config), vendedoras: d.vendedoras.filter(v => v.activa).map(sinPin), hoy: h, marcasHoy: d.marcas.filter(m => m.fecha === h) }; },
@@ -333,7 +337,7 @@ const Demo = {
   marcar(p) {
     const d = demoDB(); const v = d.vendedoras.find(x => x.id === p.id);
     if (!v || !v.activa) throw new Error('No encontramos a esta vendedora');
-    if (pinN(v.pin) !== pinN(p.pin)) throw new Error('PIN incorrecto');
+    if (dniN(v.dni) !== dniN(p.dni)) throw new Error('DNI incorrecto. Revisa los 8 números.');
     const now = lima(); const hoy = d.marcas.filter(m => m.fecha === now.fecha && m.vendedoraId === v.id).sort((a, b) => a.ts - b.ts);
     const ult = hoy[hoy.length - 1];
     if (ult && now.ts - ult.ts < 120000) throw new Error('Ya marcaste tu ' + ult.tipo.toLowerCase() + ' hace un momento');
@@ -349,8 +353,8 @@ const Demo = {
   guardarVendedora(p) {
     demoAdmin(p); const d = demoDB(); const v = p.v;
     if (!String(v.nombre || '').trim()) throw new Error('Escribe el nombre');
-    if (!/^\d{4}$/.test(v.pin)) throw new Error('El PIN debe tener 4 números');
-    if (d.vendedoras.some(x => x.id !== v.id && x.activa && v.activa && pinN(x.pin) === pinN(v.pin))) throw new Error('Ese PIN ya lo usa otra vendedora');
+    if (!/^\d{8}$/.test(v.dni)) throw new Error('El DNI debe tener 8 números');
+    if (d.vendedoras.some(x => x.id !== v.id && dniN(x.dni) === dniN(v.dni))) throw new Error('Ese DNI ya está registrado en otra vendedora');
     const i = d.vendedoras.findIndex(x => x.id === v.id);
     if (i >= 0) d.vendedoras[i] = { ...v }; else d.vendedoras.push({ ...v, id: 'V' + Date.now() });
     demoSave(d); return { ok: true };
@@ -466,19 +470,19 @@ function renderMarcar() {
   $$('.person').forEach(b => b.onclick = () => abrirMarcado(S.vendedoras.find(v => v.id === b.dataset.id)));
 }
 
-function keypadHTML() {
-  return `<div class="dots" id="dots">${'<span></span>'.repeat(4)}</div><p class="err" id="perr"></p>
+function keypadHTML(largo = 4) {
+  return `<div class="dots${largo > 4 ? ' many' : ''}" id="dots">${'<span></span>'.repeat(largo)}</div><p class="err" id="perr"></p>
   <div class="keypad">${[1,2,3,4,5,6,7,8,9].map(n => `<button data-k="${n}">${n}</button>`).join('')}
   <button class="fn" data-k="c">Borrar todo</button><button data-k="0">0</button><button class="fn" data-k="b">⌫ Borrar</button></div>`;
 }
-function bindKeypad(onPin) {
+function bindKeypad(onPin, largo = 4) {
   let pin = ''; let busy = false;
   const dots = () => $$('#dots span').forEach((s, i) => s.classList.toggle('on', i < pin.length));
   const press = async k => {
     if (busy) return;
-    if (k === 'b') pin = pin.slice(0, -1); else if (k === 'c') pin = ''; else if (pin.length < 4) pin += k;
+    if (k === 'b') pin = pin.slice(0, -1); else if (k === 'c') pin = ''; else if (pin.length < largo) pin += k;
     $('#perr').textContent = ''; dots();
-    if (pin.length === 4) {
+    if (pin.length === largo) {
       busy = true;
       try { await onPin(pin); }
       catch (e) {
@@ -504,20 +508,20 @@ function abrirMarcado(v) {
   const e = estado(v);
   modal(`
     <div class="sheet-head"><div class="avatar lg">${esc(iniciales(v.nombre))}</div>
-      <div><h2>${esc(v.nombre.split(' ')[0])}</h2><span class="muted">Ingresa tu PIN de 4 números</span></div>
+      <div><h2>${esc(v.nombre.split(' ')[0])}</h2><span class="muted">Digita tu DNI (8 números)</span></div>
       <button class="x" data-close aria-label="Cerrar">×</button></div>
     <div class="types" role="group" aria-label="Qué vas a marcar">${['ENTRADA', 'ALMUERZO', 'REGRESO', 'SALIDA'].map(t => `
       <button class="type ${t}" data-tipo="${t}" aria-pressed="${t === e.next[0]}" ${e.next.includes(t) ? '' : 'disabled'}>${icono(t)}<span>${NOMBRES[t]}</span></button>`).join('')}</div>
-    ${keypadHTML()}`);
+    ${keypadHTML(8)}`);
   let tipo = e.next[0];
   $$('.type').forEach(b => b.onclick = () => { tipo = b.dataset.tipo; $$('.type').forEach(x => x.setAttribute('aria-pressed', x === b)); });
-  bindKeypad(async pin => {
-    const r = await api('marcar', { id: v.id, pin, tipo });
+  bindKeypad(async dni => {
+    const r = await api('marcar', { id: v.id, dni, tipo });
     S.marcasHoy = S.marcasHoy.filter(m => m.vendedoraId !== v.id).concat(r.marcasDia);
     exito(v, r);
     render();
     api('hoy').then(d => { S.marcasHoy = d.marcasHoy; if (S.view !== 'admin') render(); }).catch(() => {});
-  });
+  }, 8);
 }
 
 function exito(v, r) {
@@ -742,7 +746,7 @@ function adminEquipo() {
   <div style="display:flex;flex-direction:column;gap:16px">
     <div class="row" style="justify-content:space-between"><span class="muted" style="font-weight:700">${vs.filter(v => v.activa).length} vendedoras activas</span><button class="btn" id="nueva">+ Agregar vendedora</button></div>
     <div class="team">${vs.map(v => `<div class="member ${v.activa ? '' : 'off'}">
-      <div class="cell-person"><div class="avatar">${esc(iniciales(v.nombre))}</div><div><strong>${esc(v.nombre)}</strong><small>${esc(v.tienda)}</small></div></div>
+      <div class="cell-person"><div class="avatar">${esc(iniciales(v.nombre))}</div><div><strong>${esc(v.nombre)}</strong><small>${esc(v.tienda)} · DNI ${esc(v.dni || '—')}</small></div></div>
       <div class="row" style="gap:8px"><span class="pill pronto plain">${esc(v.turno)} · ${h12(v.entrada)} – ${h12(v.salida)}</span>${v.activa ? '' : '<span class="pill falta plain">Inactiva</span>'}</div>
       <button class="btn ghost sm" data-ed="${esc(v.id)}">Editar</button></div>`).join('')}</div>
   </div>`;
@@ -760,7 +764,7 @@ function formVendedora(v) {
       <div class="field"><label for="vtu">Turno</label><select id="vtu">${['Mañana', 'Tarde', 'Otro'].map(t => `<option ${t === v.turno ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="field"><label for="ve">Hora de entrada</label><input type="time" id="ve" value="${v.entrada || ''}" required></div>
       <div class="field"><label for="vs">Hora de salida</label><input type="time" id="vs" value="${v.salida || ''}" required></div>
-      <div class="field"><label for="vp">PIN personal (4 números)</label><input id="vp" inputmode="numeric" maxlength="4" pattern="\\d{4}" value="${esc(v.pin || '')}" required></div>
+      <div class="field"><label for="vp">DNI (8 números)</label><input id="vp" inputmode="numeric" maxlength="8" pattern="\\d{8}" value="${esc(v.dni || '')}" required><small class="muted">Con este número marcará su asistencia.</small></div>
       <div class="field" style="justify-content:flex-end"><label class="switch" for="va"><input type="checkbox" id="va" ${v.activa ? 'checked' : ''}> Activa</label></div>
       <div class="row end" style="grid-column:1/-1"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn" id="vok">Guardar</button></div>
     </form>`);
@@ -768,7 +772,7 @@ function formVendedora(v) {
   $('#vtu').onchange = e => { const t = turnos[e.target.value]; if (t) { $('#ve').value = t[0]; $('#vs').value = t[1]; } };
   $('#fvend').onsubmit = async e => {
     e.preventDefault(); $('#vok').disabled = true;
-    const nv = { id: v.id, nombre: $('#vn').value.trim(), tienda: $('#vt').value, turno: $('#vtu').value, entrada: $('#ve').value, salida: $('#vs').value, pin: $('#vp').value.trim(), activa: $('#va').checked };
+    const nv = { id: v.id, nombre: $('#vn').value.trim(), tienda: $('#vt').value, turno: $('#vtu').value, entrada: $('#ve').value, salida: $('#vs').value, dni: $('#vp').value.trim(), activa: $('#va').checked };
     try { await adminApi('guardarVendedora', { v: nv }); cerrar(); toast('Vendedora guardada'); await cargarReporte(); await recargarBase(); }
     catch (er) { toast(er.message); $('#vok').disabled = false; }
   };
@@ -814,7 +818,7 @@ async function exportar() {
   try {
     const X = await cargarXLSX();
     const resumen = resumenFilas().map(r => ({
-      'Vendedora': r.v.nombre, 'Tienda': r.v.tienda, 'Turno': r.v.turno, 'Horario': `${r.v.entrada}-${r.v.salida}`,
+      'Vendedora': r.v.nombre, 'DNI': r.v.dni || '', 'Tienda': r.v.tienda, 'Turno': r.v.turno, 'Horario': `${r.v.entrada}-${r.v.salida}`,
       'Días trabajados': r.dias, 'Horas (h:mm)': durC(r.minutos), 'Horas decimales': Math.round(r.minutos / 60 * 100) / 100,
       'Tardanzas': r.tardanzas, 'Minutos tarde': r.minTarde, 'Días sin salida': r.sinSalida,
     }));
@@ -827,7 +831,7 @@ async function exportar() {
       'Minutos tarde': d.minTarde, 'Observación': [d.sinRegreso ? 'Sin regreso' : d.sinSalida ? 'Sin salida' : '', d.almuerzoLargo ? 'Almuerzo largo' : ''].filter(Boolean).join(', '),
     }));
     const wb = X.utils.book_new();
-    const s1 = X.utils.json_to_sheet(resumen); s1['!cols'] = [24, 18, 10, 13, 15, 13, 15, 10, 13, 14].map(w => ({ wch: w }));
+    const s1 = X.utils.json_to_sheet(resumen); s1['!cols'] = [24, 11, 18, 10, 13, 15, 13, 15, 10, 13, 14].map(w => ({ wch: w }));
     const s2 = X.utils.json_to_sheet(detalle); s2['!cols'] = [12, 24, 18, 9, 16, 18, 13, 9, 13, 15, 13, 22].map(w => ({ wch: w }));
     X.utils.book_append_sheet(wb, s1, 'Resumen');
     X.utils.book_append_sheet(wb, s2, 'Detalle');
