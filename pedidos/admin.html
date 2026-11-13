@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#B3315F">
+<meta name="theme-color" content="#E0457B">
 <title>Admin Pedidos Oh Diosa</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
 :root{
   --ground:#FBF7FA; --surface:#FFFFFF; --sunk:#F3ECF1; --line:#E6DBE3;
@@ -159,13 +159,77 @@ nav.tabs{align-items:center}
 .kpi .kv{font:800 28px/1 var(--display);font-variant-numeric:tabular-nums}
 .kpi .kl{font-size:12px;color:var(--muted);font-weight:600}
 .kpi.pend .kv{color:var(--pend)}.kpi.ruta .kv{color:var(--ruta)}.kpi.ok .kv{color:var(--ok)}
+
+/* ---- visual v2 ---- */
+:root{--avbgS:85%;--avbgL:91%;--avfgS:60%;--avfgL:30%}
+.av{--h:330;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;flex:none;font:800 14px/1 var(--display);letter-spacing:.02em;color:hsl(var(--h) var(--avfgS) var(--avfgL));background:linear-gradient(145deg,hsl(var(--h) var(--avbgS) var(--avbgL)),hsl(calc(var(--h) + 24) var(--avbgS) calc(var(--avbgL) - 6%)))}
+.av.sm{width:30px;height:30px;border-radius:9px;font-size:11px}
+.av.lg{width:46px;height:46px;border-radius:14px;font-size:16px}
+.logo{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--accent),#E8628F);color:#fff;font:800 14px var(--display);align-self:center;box-shadow:0 4px 12px rgba(179,49,95,.35)}
+.brand h1{display:flex;align-items:center;gap:10px}
+.s-pendiente{--c:var(--pend)}.s-en_camino{--c:var(--ruta)}.s-entregado{--c:var(--ok)}
+.steps{display:flex;align-items:center;padding:0 14px 12px}
+.stp{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--faint);white-space:nowrap}
+.stp i{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-style:normal;font-size:11px;line-height:1}
+.stp.on{color:var(--ink)}.stp.on i{background:var(--c);border-color:var(--c);color:#fff}
+.stp-line{flex:1;min-width:10px;height:3px;border-radius:2px;background:var(--line);margin:0 8px}.stp-line.on{background:var(--c)}
+.t-who{display:flex;align-items:center;gap:8px}
+.t-it{grid-template-columns:44px 30px 1fr auto!important;align-items:center!important}
+.t-it .q{font-size:16px}
+.ticket{transition:transform .15s}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--avbgS:40%;--avbgL:24%;--avfgS:85%;--avfgL:84%}}
+:root[data-theme="dark"]{--avbgS:40%;--avbgL:24%;--avfgS:85%;--avfgL:84%}
+
+/* ---- design v4 · blush minimal ---- */
+#fBuscar{padding-left:18px!important}
+:root,:root:not([data-theme="light"]){--ground:#FFF8F9;--surface:#FFFFFF;--sunk:#FDEEF1;--line:#F3DDE2;--ink:#2D2326;--muted:#7A6A6F;--faint:#A18F95;--accent:#E0457B;--accent-ink:#FFFFFF;--accent-soft:#FDE6EC;--gold:#E0457B;--ok:#1F8A5B;--ok-bg:#E3F5EC;--pend:#B0701A;--pend-bg:#FFF0D6;--display:"Plus Jakarta Sans",system-ui,sans-serif;--body:"Plus Jakarta Sans",system-ui,sans-serif;--shadow:0 1px 2px #e0457b10,0 10px 30px -18px #e0457b55}
+body{background:#FFF8F9}body::before{display:none}
+header.top{background:#FFF8F9ee;border-bottom:1px solid #F3DDE2;backdrop-filter:blur(8px)}
+.brand h1{font:700 21px/1 var(--display);letter-spacing:-.025em}
+.brand h1 em{font-style:normal;color:#E0457B}
+.logo{width:30px;height:30px;font:700 12px var(--display);font-style:normal;background:#E0457B;box-shadow:none;border-radius:10px;color:#fff}
+.brand .sub{font-weight:500;letter-spacing:0;text-transform:none;font-size:12px;order:0;flex-basis:auto}
+nav.tabs button{font-weight:600}nav.tabs button[aria-selected="true"]{border-bottom-color:#E0457B;color:#2D2326}
+.field>.label{font-weight:600;letter-spacing:.06em;text-transform:none;font-size:13px;color:#2D2326}
+.field>.label::before{display:none}
+.seg{gap:8px}
+.seg button{border:1.5px solid #F3DDE2;border-radius:16px;background:#fff;font-weight:600;font-family:var(--body);font-size:15px;padding:14px 8px;box-shadow:none}
+.seg button .av{width:28px;height:28px;border-radius:50%;font-size:11px;background:#FDE6EC;color:#E0457B}
+.seg button[aria-pressed="true"]{border-color:#E0457B;background:#FDE6EC;color:#2D2326;box-shadow:none}.seg button[aria-pressed="true"] small{color:#E0457B}
+input[type=text],input[type=search]{border-radius:999px;border:1.5px solid #F3DDE2;background:#fff;padding-left:44px}
+input[type=text]{padding-left:18px}
+.chip{border-radius:999px;border:1.5px solid #F3DDE2;background:#fff;font-weight:600;font-size:12.5px}.chip .av{display:none}.brands .chip{padding:6px 14px}
+.chip[aria-pressed="true"]{background:#E0457B;color:#fff;border-color:#E0457B}
+.results{grid-template-columns:1fr;gap:8px}
+.res{border:1.5px solid #F3DDE2!important;border-radius:18px;background:#fff!important;box-shadow:none;min-height:0;padding:12px 14px!important}
+.res:hover,.res.hl{border-color:#E0457B!important;transform:none}
+.res.inlist{background:#FDE6EC!important;border-color:#E0457B!important}
+.av{border-radius:12px;background:#FDE6EC;color:#E0457B;width:38px;height:38px}
+.res .n{font:600 14.5px/1.25 var(--body)}
+.stkb{background:#E3F5EC;color:#1F8A5B;font-weight:600}
+.res .add{border-radius:50%;width:34px;height:34px;background:#E0457B;box-shadow:none;font-size:18px}
+.res.inlist .add{width:auto}
+.cart,.ticket,.done,.kpi,.login{border-radius:20px;border:1.5px solid #F3DDE2;background:#fff;box-shadow:none}
+.cart-head{background:#FFF8F9}.cart-head strong,.browse-title b{font:700 15px var(--display)}
+.btn{border-radius:999px;background:#2D2326;color:#fff;font-weight:600;box-shadow:none}.btn.ghost{background:#fff;color:#2D2326;border:1.5px solid #F3DDE2}
+#enviar,.bar .btn{background:#E0457B;color:#fff;box-shadow:0 12px 24px -12px #E0457B}
+.bar{background:#fff;color:#2D2326;border-top:1px solid #F3DDE2;box-shadow:none}.bar .sum span{color:#A18F95}.bar .sum b{font:700 18px var(--display)}
+.done .num,.t-num{font-family:var(--display);font-weight:700}
+
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:no-preference){
+  .results.fresh .res{animation:rise .4s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*30ms)}
+  .tickets>.ticket{animation:rise .4s cubic-bezier(.2,.7,.2,1) both}
+  .done .tick{animation:pop .5s cubic-bezier(.3,1.4,.5,1) both}
+}
 </style>
 <style>html{color-scheme:light}body{margin:0;padding-top:env(safe-area-inset-top,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
 </head><body>
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1>Oh Diosa <em>Admin</em></h1>
+      <h1><span class="logo">od</span><span>Oh Diosa <em>Admin</em></span></h1>
       <span class="sub">Aprobación de pedidos</span>
       <span class="conn"><span class="dot" id="connDot"></span><span id="connTxt">—</span></span>
     </div>
@@ -203,6 +267,13 @@ const $=id=>document.getElementById(id);
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+
+const hue=s=>{let h=0;for(const ch of String(s||"?"))h=(h*31+ch.charCodeAt(0))%360;return h};
+const initials=s=>{const w=String(s||"").trim().split(/[\s&.]+/).filter(Boolean);return((w[0]||"?")[0]+(w[1]?w[1][0]:"")).toUpperCase()};
+const avatar=(it,cls="")=>{const k=(it.m&&it.m!=="OTRO")?it.m:it.n;return `<span class="av ${cls}" style="--h:${hue(k)}" aria-hidden="true">${esc(initials(k))}</span>`};
+const storeAv=(id,nombre,cls="")=>`<span class="av ${cls}" style="--h:${({CAJ:340,MAN:205,ANC:150})[id]??300}" aria-hidden="true">${esc((nombre||id||"?")[0])}</span>`;
+const stepsHTML=e=>{const o=["pendiente","en_camino","entregado"],i=o.indexOf(e);
+  return `<div class="steps">${o.map((k,j)=>`${j?`<span class="stp-line${j<=i?" on":""}"></span>`:""}<span class="stp${j<=i?" on":""}"><i>${j<=i?"✓":""}</i>${ESTADOS[k]}</span>`).join("")}</div>`};
 const fmt=t=>t?new Date(t).toLocaleString("es-PE",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"";
 
 async function apiGet(params){
@@ -232,13 +303,14 @@ function ticketHTML(p,actions,showStock){
   return `<article class="ticket s-${p.estado}">
     <div class="t-head">
       <span class="t-num">${esc(p.num)}</span>
-      <span class="t-who"><b>${esc(p.tiendaNombre)}</b> · ${esc(p.vendedora)}</span>
+      <span class="t-who">${storeAv(p.tienda,p.tiendaNombre,"sm")}<span><b>${esc(p.tiendaNombre)}</b> · ${esc(p.vendedora)}</span></span>
       <span class="pill ${p.estado}">${ESTADOS[p.estado]||esc(p.estado)}</span>
     </div>
+    ${stepsHTML(p.estado)}
     <div class="t-items">${p.items.map(it=>{
       let stk="";
       if(showStock){const s=stockOf(it);stk=s==null?`<span class="stk">Almacén: —</span>`:`<span class="stk${s<it.q?" low":""}">Almacén: ${s}</span>`;}
-      return `<div class="t-it"><span class="q">${it.q}×</span><div><div class="n">${esc(it.n)}</div><div class="code">${esc(it.c)}${it.m?" · "+esc(it.m):""}</div></div>${stk}</div>`;}).join("")}</div>
+      return `<div class="t-it"><span class="q">${it.q}×</span>${avatar(it,"sm")}<div><div class="n">${esc(it.n)}</div><div class="code">${esc(it.c)}${it.m?" · "+esc(it.m):""}</div></div>${stk}</div>`;}).join("")}</div>
     <div class="t-foot">
       <div class="t-time"><span>Pedido ${fmt(p.creado)} · ${p.items.length} prod. / ${units} unid.</span>${p.estado!=="pendiente"&&last?`<span>${ESTADOS[p.estado]} ${fmt(last.t)}</span>`:""}</div>
       ${actions?`<div class="t-actions">${actions(p)}</div>`:""}
