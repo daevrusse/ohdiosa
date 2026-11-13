@@ -282,6 +282,7 @@ input[type=text]{padding-left:18px}
     <nav class="tabs" role="tablist">
       <button role="tab" id="tabNuevo" aria-selected="true">Nuevo pedido</button>
       <button role="tab" id="tabMis" aria-selected="false">Mis pedidos <span class="badge" id="pendBadge" hidden>0</span></button>
+      <button class="linkish" id="uSalir2" type="button" hidden style="margin-left:auto;align-self:center">Cerrar sesión</button>
     </nav>
   </header>
 
@@ -297,7 +298,7 @@ input[type=text]{padding-left:18px}
       </div>
       <div class="field" id="userBar" hidden>
         <span class="label">Vendedora</span>
-        <div><b id="uNom"></b> · <span id="uTienda"></span> &nbsp;<button class="linkish" id="uSalir" type="button">Cambiar usuario</button></div>
+        <div><b id="uNom"></b> · <span id="uTienda"></span> &nbsp;<button class="linkish" id="uSalir" type="button">Cerrar sesión</button></div>
       </div>
       <div class="field" id="pedidoBox" hidden>
         <label class="label" for="q">Buscar producto</label>
@@ -417,7 +418,7 @@ $("tabMis").onclick=()=>showTab("mis");
 
 function paintUser(){
   const on=!!(sess&&sess.id);
-  $("loginBox").hidden=on;$("userBar").hidden=!on;$("pedidoBox").hidden=!on;
+  $("uSalir2").hidden=!on;$("loginBox").hidden=on;$("userBar").hidden=!on;$("pedidoBox").hidden=!on;
   $("cart").hidden=!on;$("enviar").closest(".stack-sm").hidden=!on;
   if(on){const t=TIENDAS.find(x=>x.id===sess.tienda);$("uNom").textContent=sess.nombre;$("uTienda").textContent=t?t.nombre:sess.tienda;}
   tienda=on?sess.tienda:"";validate();
@@ -437,7 +438,8 @@ $("uEntrar").onclick=async()=>{
   }catch(e){$("uErr").textContent=(e&&e.message&&!/fetch/i.test(e.message))?e.message:"No se pudo conectar. Intenta de nuevo.";$("uErr").hidden=false;}
   finally{b.disabled=false;}
 };
-$("uSalir").onclick=()=>{sess=null;store.del("od_user");cart=[];renderCart();pedidos=[];cargado=false;paintUser();cargarUsuarios();};
+const salir=()=>{sess=null;store.del("od_user");cart=[];renderCart();pedidos=[];cargado=false;paintUser();cargarUsuarios();$("doneArea").hidden=true;$("formArea").hidden=false;showTab("nuevo");window.scrollTo({top:0});};
+$("uSalir").onclick=salir;$("uSalir2").onclick=salir;
 cargarUsuarios();
 
 onCatalog=ok=>{
