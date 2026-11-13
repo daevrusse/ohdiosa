@@ -256,6 +256,18 @@ input[type=text]{padding-left:18px}
     </div>
     <span class="err" id="actErr" hidden></span>
     <div class="tickets" id="ticketList"></div>
+    <div class="login" id="userBox" style="margin-top:28px;max-width:none">
+      <span class="label">Usuarios (vendedoras)</span>
+      <p class="hint">Crea una cuenta por vendedora con su tienda y una clave de 4 a 6 números. Cada una entra con su clave y solo ve sus propios pedidos.</p>
+      <div id="uList"></div>
+      <form id="uForm" style="display:grid;gap:10px">
+        <input type="text" id="uNombre" placeholder="Nombre de la vendedora" autocomplete="off" style="font-size:15px;letter-spacing:normal;text-align:left;font-family:inherit;padding:11px 16px;border-radius:999px">
+        <select id="uTiendaSel" style="font-size:15px;letter-spacing:normal;text-align:left;font-family:inherit;padding:11px 16px;border-radius:999px"><option value="">Tienda</option></select>
+        <input type="text" id="uPinNew" inputmode="numeric" maxlength="6" placeholder="Clave (4 a 6 números)" autocomplete="off" style="font-size:15px;letter-spacing:normal;text-align:left;font-family:inherit;padding:11px 16px;border-radius:999px">
+        <button class="btn" type="submit">Crear usuario</button>
+      </form>
+      <span class="hint" id="uMsg"></span>
+    </div>
     <div class="login" id="baseBox" style="margin-top:28px;max-width:none">
       <span class="label">Base de productos</span>
       <p class="hint" id="baseInfo">Sube el Excel de productos (el mismo que exportas del sistema). Las asesoras verán la base nueva al instante.</p>
@@ -332,7 +344,7 @@ const ACCION={pendiente:"Aprobar · En camino",en_camino:"Confirmar entregado"};
 let pin=store.get("od_pin")||"", pedidos=[], fEstado="pendiente", cargado=false;
 $("fTienda").innerHTML+=TIENDAS.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join("");
 
-function entrarUI(on){$("viewLogin").hidden=on;$("viewAdmin").hidden=!on;$("salir").hidden=!on;if(on)cargar();}
+function entrarUI(on){$("viewLogin").hidden=on;$("viewAdmin").hidden=!on;$("salir").hidden=!on;if(on){cargar();cargarUsuarios();}}
 $("loginForm").addEventListener("submit",async e=>{
   e.preventDefault();$("loginErr").hidden=true;const v=$("pin").value.trim();if(!v)return;
   $("entrar").disabled=true;$("entrar").textContent="Verificando…";
@@ -393,6 +405,23 @@ async function cargar(){
 $("refrescar").onclick=cargar;
 setInterval(()=>{if(pin&&!document.hidden)cargar();},20000);
 if(pin)entrarUI(true);
+/* ---- Usuarios ---- */
+$("uTiendaSel").innerHTML+=TIENDAS.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join("");
+async function cargarUsuarios(){
+  try{const j=await apiPost({action:"usuarios_admin",pin});if(!j.ok)throw new Error(j.error);
+    $("uList").innerHTML=j.usuarios.length?j.usuarios.map(u=>`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #F3DDE2;${u.activo?"":"opacity:.5"}"><span style="flex:1 1 180px"><b>${esc(u.nombre)}</b> · ${esc(u.tiendaNombre)}<br><span class="hint">Clave: ${esc(u.pin)}${u.activo?"":" · desactivada"}</span></span><button class="btn sm ghost" data-a="pin" data-id="${esc(u.id)}" type="button">Cambiar clave</button><button class="btn sm ghost" data-a="act" data-v="${u.activo?0:1}" data-id="${esc(u.id)}" type="button">${u.activo?"Desactivar":"Activar"}</button></div>`).join(""):`<span class="hint">Aún no hay usuarios.</span>`;
+    $("uList").querySelectorAll("button").forEach(b=>b.onclick=async()=>{
+      const body={action:"usuario_editar",pin,id:b.dataset.id};
+      if(b.dataset.a==="pin"){const n=prompt("Nueva clave (4 a 6 números):");if(!n)return;body.upin=n;}else body.activo=b.dataset.v==="1";
+      const r=await apiPost(body);$("uMsg").textContent=r.ok?"Listo.":"Error: "+(r.error||"");cargarUsuarios();});
+  }catch(e){$("uList").innerHTML=`<span class="hint">No se pudo cargar la lista.</span>`;}
+}
+$("uForm").onsubmit=async e=>{
+  e.preventDefault();const m=$("uMsg");
+  try{const r=await apiPost({action:"usuario_crear",pin,nombre:$("uNombre").value,tienda:$("uTiendaSel").value,upin:$("uPinNew").value});
+    if(!r.ok)throw new Error(r.error||"Error");m.textContent="Usuario creado.";$("uNombre").value="";$("uPinNew").value="";cargarUsuarios();
+  }catch(err){m.textContent="Error: "+err.message;}
+};
 /* ---- Subir base de productos ---- */
 const clean=v=>String(v==null?"":v).trim();
 apiGet({action:"catalogo"}).then(j=>{if(j.fecha)$("baseInfo").textContent="Base actual: "+j.n+" productos · actualizada "+j.fecha;}).catch(()=>{});
