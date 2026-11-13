@@ -256,11 +256,19 @@ input[type=text]{padding-left:18px}
     </div>
     <span class="err" id="actErr" hidden></span>
     <div class="tickets" id="ticketList"></div>
+    <div class="login" id="baseBox" style="margin-top:28px;max-width:none">
+      <span class="label">Base de productos</span>
+      <p class="hint" id="baseInfo">Sube el Excel de productos (el mismo que exportas del sistema). Las asesoras verán la base nueva al instante.</p>
+      <input type="file" id="baseFile" accept=".xlsx,.xls" style="display:none">
+      <button class="btn" id="baseBtn" type="button">Subir base actualizada</button>
+      <span class="hint" id="baseMsg"></span>
+    </div>
   </section>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-const API="https://script.google.com/macros/s/AKfycbwivGpPegriHHHlK5fbMQ-jK2hkSVKyai0aSsOR__AI0o9TI0mhn8c0PthVtBcmdpbb2w/exec";
+const API="https://script.google.com/macros/s/AKfycbzMsg4QAbVRZlhnxHmFy14Ef3CtaTwKhLTvL2Qc3FFSDQazr44gHSr2uJWR_kzPhJ5V/exec";
 const TIENDAS=[{id:"CAJ",nombre:"Cajamarca"},{id:"MAN",nombre:"Mantaro"},{id:"ANC",nombre:"Ancash"}];
 const ESTADOS={pendiente:"Pendiente",en_camino:"En camino",entregado:"Entregado"};
 const $=id=>document.getElementById(id);
@@ -385,6 +393,34 @@ async function cargar(){
 $("refrescar").onclick=cargar;
 setInterval(()=>{if(pin&&!document.hidden)cargar();},20000);
 if(pin)entrarUI(true);
+/* ---- Subir base de productos ---- */
+const clean=v=>String(v==null?"":v).trim();
+apiGet({action:"catalogo"}).then(j=>{if(j.fecha)$("baseInfo").textContent="Base actual: "+j.n+" productos · actualizada "+j.fecha;}).catch(()=>{});
+$("baseBtn").onclick=()=>$("baseFile").click();
+$("baseFile").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;const msg=$("baseMsg");
+  try{
+    msg.textContent="Leyendo Excel…";
+    const wb=XLSX.read(await f.arrayBuffer(),{type:"array"});
+    const raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:""});
+    const rows=[];
+    raw.forEach(r=>{const o={};Object.keys(r).forEach(k=>o[clean(k).toLowerCase()]=r[k]);
+      const n=clean(o["nombre"]),c=clean(o["código"]||o["codigo"]);if(!n||!c)return;
+      let m=clean(o["marca"]);if(m==="S/M"||m==="nan")m="";
+      rows.push([c,n,m,Math.round((parseFloat(o["p. venta"])||0)*100)/100,parseInt(o["stock"],10)||0]);});
+    if(rows.length<50)throw new Error("No encontré columnas Código / Nombre / P. venta / Stock");
+    rows.sort((x,y)=>x[1]<y[1]?-1:x[1]>y[1]?1:(x[0]<y[0]?-1:x[0]>y[0]?1:0));
+    const S=400,total=Math.ceil(rows.length/S);
+    for(let i=0;i<total;i++){
+      msg.textContent="Subiendo "+(i+1)+" de "+total+"…";
+      const j=await apiPost({action:"catalogo_subir",pin,parte:i,total,n:rows.length,filas:rows.slice(i*S,(i+1)*S)});
+      if(!j.ok)throw new Error(j.error||"Error del servidor");
+    }
+    msg.textContent="Listo: "+rows.length+" productos publicados.";
+    $("baseInfo").textContent="Base actual: "+rows.length+" productos · actualizada ahora";
+  }catch(err){msg.textContent="Error: "+err.message;}
+  e.target.value="";
+};
 </script>
 
 </body></html>
