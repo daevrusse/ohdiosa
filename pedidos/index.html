@@ -337,7 +337,7 @@ input[type=text]{padding-left:18px}
 <div class="bar" id="bar" hidden><div class="wrapbar"><div class="sum"><b id="barN">0 unid.</b><span id="barS"></span></div><button class="btn" id="barBtn">Revisar y enviar</button></div></div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbwivGpPegriHHHlK5fbMQ-jK2hkSVKyai0aSsOR__AI0o9TI0mhn8c0PthVtBcmdpbb2w/exec";
+const API="https://script.google.com/macros/s/AKfycbzMsg4QAbVRZlhnxHmFy14Ef3CtaTwKhLTvL2Qc3FFSDQazr44gHSr2uJWR_kzPhJ5V/exec";
 const TIENDAS=[{id:"CAJ",nombre:"Cajamarca"},{id:"MAN",nombre:"Mantaro"},{id:"ANC",nombre:"Ancash"}];
 const ESTADOS={pendiente:"Pendiente",en_camino:"En camino",entregado:"Entregado"};
 const $=id=>document.getElementById(id);
@@ -363,7 +363,9 @@ async function apiPost(body){
 }
 
 let catalog=[],idx=[],byKey=new Map(),onCatalog=()=>{};
-fetch("catalogo.json",{cache:"no-cache"}).then(r=>r.json()).then(rows=>{
+const loadCat=()=>Promise.race([apiGet({action:"catalogo"}),new Promise((_,rj)=>setTimeout(rj,7000))]).then(j=>{if(!j.filas||!j.filas.length)throw 0;window.baseFecha=j.fecha;return j.filas;})
+  .catch(()=>fetch("catalogo.json",{cache:"no-cache"}).then(r=>r.json()));
+loadCat().then(rows=>{
   catalog=rows.map(r=>({c:r[0],n:r[1],m:r[2],p:r[3],s:r[4]}));
   idx=catalog.map(p=>({p,t:norm(p.n+" "+p.m),c:norm(p.c)}));
   catalog.forEach(p=>byKey.set(p.c+"|"+p.n,p));
