@@ -287,15 +287,19 @@ input[type=text]{padding-left:18px}
 
   <section class="view" id="viewNuevo">
     <div id="formArea" class="stack">
-      <div class="field">
-        <span class="label">Tienda</span>
-        <div class="seg" id="segTienda"></div>
+      <div class="field" id="loginBox">
+        <span class="label">Entra con tu usuario</span>
+        <select id="uSel" aria-label="Tu nombre"><option value="">Elige tu nombre</option></select>
+        <input type="password" id="uPin" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Tu clave (solo números)" style="width:100%;box-sizing:border-box;background:#fff;border:1.5px solid #F3DDE2;border-radius:999px;padding:12px 18px;outline:none">
+        <button class="btn" id="uEntrar" type="button">Entrar</button>
+        <span class="err" id="uErr" hidden></span>
+        <span class="hint">Si no apareces en la lista o olvidaste tu clave, pídesela al administrador.</span>
       </div>
-      <div class="field">
-        <label class="label" for="vendedora">Nombre de la vendedora</label>
-        <input type="text" id="vendedora" autocomplete="off" placeholder="Ej. Rosa Quispe">
+      <div class="field" id="userBar" hidden>
+        <span class="label">Vendedora</span>
+        <div><b id="uNom"></b> · <span id="uTienda"></span> &nbsp;<button class="linkish" id="uSalir" type="button">Cambiar usuario</button></div>
       </div>
-      <div class="field">
+      <div class="field" id="pedidoBox" hidden>
         <label class="label" for="q">Buscar producto</label>
         <div class="search">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -397,7 +401,9 @@ function ticketHTML(p,actions,showStock){
   </article>`;
 }
 
-let tienda=store.get("od_tienda")||"";
+let tienda="",sess=null;
+try{sess=JSON.parse(store.get("od_user")||"null");}catch(e){sess=null;}
+if(sess&&sess.id)tienda=sess.tienda;
 let cart=[], pedidos=[], fEstado="activos", cargado=false;
 
 function showTab(t){
@@ -409,13 +415,30 @@ function showTab(t){
 $("tabNuevo").onclick=()=>showTab("nuevo");
 $("tabMis").onclick=()=>showTab("mis");
 
-function renderSeg(){
-  $("segTienda").innerHTML=TIENDAS.map(t=>`<button type="button" data-t="${t.id}" aria-pressed="${t.id===tienda}">${storeAv(t.id,t.nombre)}${t.nombre}<small>${t.id}-####</small></button>`).join("");
-  $("segTienda").querySelectorAll("button").forEach(b=>b.onclick=()=>{tienda=b.dataset.t;store.set("od_tienda",tienda);renderSeg();validate();pedidos=[];cargado=false;});
+function paintUser(){
+  const on=!!(sess&&sess.id);
+  $("loginBox").hidden=on;$("userBar").hidden=!on;$("pedidoBox").hidden=!on;
+  $("cart").hidden=!on;$("enviar").closest(".stack-sm").hidden=!on;
+  if(on){const t=TIENDAS.find(x=>x.id===sess.tienda);$("uNom").textContent=sess.nombre;$("uTienda").textContent=t?t.nombre:sess.tienda;}
+  tienda=on?sess.tienda:"";validate();
 }
-renderSeg();
-$("vendedora").value=store.get("od_vend")||"";
-$("vendedora").addEventListener("input",()=>{store.set("od_vend",$("vendedora").value.trim());validate();});
+async function cargarUsuarios(){
+  try{const j=await apiGet({action:"usuarios"});
+    const sel=$("uSel");sel.innerHTML='<option value="">Elige tu nombre</option>'+(j.usuarios||[]).map(u=>`<option value="${esc(u.id)}">${esc(u.nombre)} · ${esc(u.tiendaNombre)}</option>`).join("");
+  }catch(e){$("uErr").textContent="No se pudo cargar la lista de usuarios. Revisa tu internet.";$("uErr").hidden=false;}
+}
+$("uEntrar").onclick=async()=>{
+  $("uErr").hidden=true;const id=$("uSel").value,pin=$("uPin").value.trim();
+  if(!id||!pin){$("uErr").textContent="Elige tu nombre y escribe tu clave.";$("uErr").hidden=false;return;}
+  const b=$("uEntrar");b.disabled=true;
+  try{const j=await apiPost({action:"usuario_login",usuario:id,upin:pin});
+    if(!j.ok)throw new Error(j.error||"Error");
+    sess={id:j.u.id,nombre:j.u.nombre,tienda:j.u.tienda,pin};store.set("od_user",JSON.stringify(sess));$("uPin").value="";pedidos=[];cargado=false;paintUser();
+  }catch(e){$("uErr").textContent=(e&&e.message&&!/fetch/i.test(e.message))?e.message:"No se pudo conectar. Intenta de nuevo.";$("uErr").hidden=false;}
+  finally{b.disabled=false;}
+};
+$("uSalir").onclick=()=>{sess=null;store.del("od_user");cart=[];renderCart();pedidos=[];cargado=false;paintUser();cargarUsuarios();};
+cargarUsuarios();
 
 onCatalog=ok=>{
   $("catHint").textContent=ok?`${catalog.length.toLocaleString("es-PE")} productos. Escribe el nombre, la marca o el código para buscar.`:"No se pudo cargar el catálogo. Recarga la página.";
@@ -500,23 +523,23 @@ function refreshBar(){
 }
 $("barBtn").onclick=()=>$("cart").scrollIntoView({behavior:"smooth",block:"start"});
 function validate(){
-  const vOk=$("vendedora").value.trim().length>=2;
+  const vOk=!!(sess&&sess.id);
   $("enviar").disabled=!(tienda&&vOk&&cart.length);
-  const f=[];if(!tienda)f.push("elige la tienda");if(!vOk)f.push("escribe tu nombre");if(!cart.length)f.push("agrega al menos un producto");
+  const f=[];if(!vOk)f.push("entra con tu usuario");if(!cart.length)f.push("agrega al menos un producto");
   $("sendHint").textContent=f.length?"Falta: "+f.join(", ")+".":"Listo. Al enviar recibirás tu número de atención.";
   refreshBar();if(typeof lastRes!=="undefined"&&catalog.length&&$("results"))paintKeep();
 }
 function paintKeep(){$("results").querySelectorAll(".res").forEach(b=>{const p=lastRes[+b.dataset.i];if(!p)return;const inl=cart.find(x=>x.c===p.c&&x.n===p.n);b.classList.toggle("inlist",!!inl);b.querySelector(".add").textContent=inl?"✓ "+inl.q:"+";});}
-renderCart();
+renderCart();paintUser();
 
 $("enviar").onclick=async()=>{
   $("sendErr").hidden=true;const btn=$("enviar");btn.disabled=true;btn.textContent="Enviando…";
   try{
-    const j=await apiPost({action:"crear",tienda,vendedora:$("vendedora").value.trim(),items:cart});
+    const j=await apiPost({action:"crear",usuario:sess.id,upin:sess.pin,items:cart});
     if(!j.ok)throw new Error(j.error);
     const t=TIENDAS.find(x=>x.id===tienda);
     $("doneNum").textContent=j.num;
-    $("doneTxt").textContent=`${t.nombre} · ${$("vendedora").value.trim()} · ${cart.length} producto${cart.length>1?"s":""}. Con este número el almacén confirma cuando tu pedido sea atendido.`;
+    $("doneTxt").textContent=`${t.nombre} · ${sess.nombre} · ${cart.length} producto${cart.length>1?"s":""}. Con este número el almacén confirma cuando tu pedido sea atendido.`;
     cart=[];renderCart();cargado=false;
     $("formArea").hidden=true;$("doneArea").hidden=false;refreshBar();
   }catch(e){
@@ -539,8 +562,8 @@ function renderList(){
   const act=pedidos.filter(p=>p.estado!=="entregado").length;
   $("pendBadge").textContent=act;$("pendBadge").hidden=!act;
   const t=TIENDAS.find(x=>x.id===tienda);
-  $("misTienda").textContent=t?`Pedidos de ${t.nombre}`:"";
-  if(!tienda){$("ticketList").innerHTML=`<div class="none">Elige tu tienda en “Nuevo pedido” para ver sus pedidos.</div>`;return;}
+  $("misTienda").textContent=sess?`Pedidos de ${sess.nombre}`:"";
+  if(!sess){$("ticketList").innerHTML=`<div class="none">Entra con tu usuario en “Nuevo pedido” para ver tus pedidos.</div>`;return;}
   if(!cargado){$("ticketList").innerHTML=`<div class="none">Cargando…</div>`;return;}
   const list=pedidos.filter(p=>fEstado==="todos"||(fEstado==="activos"?p.estado!=="entregado":p.estado===fEstado));
   $("ticketList").innerHTML=list.length?list.map(p=>ticketHTML(p,null,false)).join(""):`<div class="none">No hay pedidos aquí.</div>`;
@@ -548,8 +571,8 @@ function renderList(){
 let cargando=false;
 async function cargar(){
   renderChips();renderList();
-  if(!tienda||cargando)return;cargando=true;
-  try{const j=await apiGet({action:"listar",tienda,limite:150});pedidos=j.pedidos;cargado=true;setConn("on","En línea");}
+  if(!sess||cargando)return;cargando=true;
+  try{const j=await apiPost({action:"mis_pedidos",usuario:sess.id,upin:sess.pin});if(!j.ok)throw new Error(j.error);pedidos=j.pedidos;cargado=true;setConn("on","En línea");}
   catch(e){setConn("off","Sin conexión");if(!cargado)$("ticketList").innerHTML=`<div class="none">No se pudieron cargar los pedidos. Toca “Actualizar”.</div>`;}
   finally{cargando=false;}
   if(cargado){renderChips();renderList();}
