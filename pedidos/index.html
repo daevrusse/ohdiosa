@@ -398,7 +398,7 @@ function ticketHTML(p,actions,showStock){
       return `<div class="t-it"><span class="q">${it.q}×</span>${avatar(it,"sm")}<div><div class="n">${esc(it.n)}</div><div class="code">${esc(it.c)}${it.m?" · "+esc(it.m):""}</div></div>${stk}</div>`;}).join("")}</div>
     <div class="t-foot">
       <div class="t-time"><span>Pedido ${fmt(p.creado)} · ${p.items.length} prod. / ${units} unid.</span>${p.estado!=="pendiente"&&last?`<span>${ESTADOS[p.estado]} ${fmt(last.t)}</span>`:""}</div>
-      <div class="t-actions">${actions?actions(p):""}<button class="dl-btn" type="button" data-dl="${esc(p.num)}">⬇ Descargar Excel</button></div>
+      <div class="t-actions">${actions?actions(p):""}</div>
     </div>
   </article>`;
 }
