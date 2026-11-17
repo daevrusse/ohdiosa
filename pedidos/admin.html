@@ -285,7 +285,7 @@ input[type=text]{padding-left:18px}
 <div class="dwrap" id="dashBox"><div class="dctl"><div class="dchips" id="dChips"><button type="button" data-pre="hoy">Hoy</button><button type="button" data-pre="ayer">Ayer</button><button type="button" data-pre="sem">Esta semana</button><button type="button" data-pre="7">7 días</button><button type="button" data-pre="30">30 días</button><button type="button" data-pre="mes">Este mes</button><button type="button" data-pre="mesant">Mes pasado</button><button type="button" data-pre="90">90 días</button><button type="button" data-pre="todo">Todo</button></div><div class="drow"><label>Desde <input type="date" id="dDesde"></label><label>Hasta <input type="date" id="dHasta"></label><select id="dTienda" aria-label="Tienda"><option value="">Todas las tiendas</option></select><select id="dVend" aria-label="Vendedora"><option value="">Todas las vendedoras</option></select><div class="dseg" id="dSeg"><button type="button" data-met="n">Pedidos</button><button type="button" data-met="u">Unidades</button></div><button type="button" class="btn sm ghost" id="dRef">Actualizar</button></div></div><div id="dOut"></div></div>
     <div class="tickets" id="ticketList"></div>
     <div class="login" id="userBox" style="margin-top:28px;max-width:none">
-      <span class="label">Usuarios (vendedoras)</span>
+      <details id="userDet"><summary class="label" style="cursor:pointer">Usuarios (vendedoras)</summary>
       <p class="hint">Crea una cuenta por vendedora con su tienda y una clave de 4 a 6 números. Cada una entra con su clave y solo ve sus propios pedidos.</p>
       <div id="uList"></div>
       <form id="uForm" style="display:grid;gap:10px">
@@ -295,14 +295,14 @@ input[type=text]{padding-left:18px}
         <button class="btn" type="submit">Crear usuario</button>
       </form>
       <span class="hint" id="uMsg"></span>
-    </div>
+    </details></div>
     <div class="login" id="baseBox" style="margin-top:28px;max-width:none">
-      <span class="label">Base de productos</span>
+      <details id="baseDet"><summary class="label" style="cursor:pointer">Base de productos</summary>
       <p class="hint" id="baseInfo">Sube el Excel de productos (el mismo que exportas del sistema). Las asesoras verán la base nueva al instante.</p>
       <input type="file" id="baseFile" accept=".xlsx,.xls" style="display:none">
       <button class="btn" id="baseBtn" type="button">Subir base actualizada</button>
       <span class="hint" id="baseMsg"></span>
-    </div>
+    </details></div>
   </section>
 </div>
 
@@ -537,6 +537,25 @@ $("dashBox").addEventListener("change",e=>{const t=e.target;
 $("dRef").onclick=()=>cargarDash(true);
 function setTab(t){$("viewAdmin").dataset.tab=t;$("tabT").setAttribute("aria-selected",t==="t");$("tabD").setAttribute("aria-selected",t==="d");if(t==="d")cargarDash(false);}
 $("tabT").onclick=()=>setTab("t");$("tabD").onclick=()=>setTab("d");
+(function(){const st=document.createElement("style");st.textContent=`.ticket.col .steps,.ticket.col .t-items{display:none}.t-head{cursor:pointer}.t-head::after{content:"▾";color:var(--muted);transition:transform .2s}.ticket.col .t-head::after{transform:rotate(-90deg)}.vbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:10px 0}.vbar .hint{margin:0}.vmore{width:100%;margin-top:10px}`;document.head.appendChild(st);})();
+const vKeyFn=()=>fEstado+"|"+$("fTienda").value+"|"+$("fBuscar").value;
+let vCompact=store.get("od_vista")!=="full",vOpen=new Set(),vLim=15,vKey="";
+function vApply(){
+  const L=$("ticketList"),ts=[...L.querySelectorAll(".ticket")],k=vKeyFn();
+  if(k!==vKey){vKey=k;vLim=15;}
+  ts.forEach((t,i)=>{const n=t.querySelector(".t-num").textContent;t.classList.toggle("col",vCompact&&!vOpen.has(n));t.hidden=i>=vLim;});
+  const old=L.querySelector(".vmore");if(old)old.remove();
+  if(ts.length>vLim)L.insertAdjacentHTML("beforeend",`<button type="button" class="btn ghost vmore">Mostrar más (${ts.length-vLim} restantes)</button>`);
+  let bar=$("vBar");if(!bar){bar=document.createElement("div");bar.id="vBar";bar.className="vbar";L.parentNode.insertBefore(bar,L);}
+  bar.innerHTML=ts.length?`<span class="hint">${Math.min(vLim,ts.length)} de ${ts.length} pedidos</span><button type="button" class="linkish" id="vTog">${vCompact?"Expandir todo":"Contraer todo"}</button>`:"";
+}
+document.addEventListener("click",e=>{
+  const h=e.target.closest(".t-head");
+  if(h&&h.closest("#ticketList")){const t=h.closest(".ticket"),n=t.querySelector(".t-num").textContent;if(t.classList.toggle("col"))vOpen.delete(n);else vOpen.add(n);return;}
+  if(e.target.closest(".vmore")){vLim+=15;vApply();return;}
+  if(e.target.id==="vTog"){vCompact=!vCompact;vOpen.clear();store.set("od_vista",vCompact?"compact":"full");vApply();}
+});
+const _rl=renderList;renderList=function(){_rl();vApply();};
 function renderAll(){renderKpis();renderChips();renderList();}
 $("fTienda").onchange=renderAll;$("fBuscar").addEventListener("input",renderList);
 
