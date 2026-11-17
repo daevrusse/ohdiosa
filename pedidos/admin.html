@@ -151,6 +151,7 @@ textarea{min-height:64px;resize:vertical}
 
 .stack{display:grid;gap:22px}.stack-sm{display:grid;gap:8px}.row{display:flex;gap:8px;flex-wrap:wrap}
 .tabnote{padding:10px 0;font-weight:600;color:var(--ink);border-bottom:3px solid var(--accent)}
+#viewAdmin[data-tab=d]>:not(#dashBox){display:none}#viewAdmin:not([data-tab=d])>#dashBox{display:none}
 nav.tabs{align-items:center}
 .login{max-width:380px;display:grid;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:var(--shadow)}
 .login p{margin:0}
@@ -234,7 +235,7 @@ input[type=text]{padding-left:18px}
       <span class="sub">Aprobación de pedidos</span>
       <span class="conn"><span class="dot" id="connDot"></span><span id="connTxt">—</span></span>
     </div>
-    <nav class="tabs"><span class="tabnote" id="tabnote">Tickets</span><button class="linkish" id="salir" hidden style="margin-left:auto">Cerrar sesión</button></nav>
+    <nav class="tabs"><button id="tabT" type="button" aria-selected="true" hidden>Tickets</button><button id="tabD" type="button" aria-selected="false" hidden>Dashboard</button><button class="linkish" id="salir" hidden style="margin-left:auto">Cerrar sesión</button></nav>
   </header>
 
   <section class="view" id="viewLogin">
@@ -256,6 +257,7 @@ input[type=text]{padding-left:18px}
       <button class="btn sm ghost" id="refrescar">Actualizar</button>
     </div>
     <span class="err" id="actErr" hidden></span>
+<div class="login" id="dashBox" style="margin:16px 0;max-width:none"><div style="margin-bottom:12px"><select id="dSem" aria-label="Semana"></select></div><div id="dOut"></div></div>
     <div class="tickets" id="ticketList"></div>
     <div class="login" id="userBox" style="margin-top:28px;max-width:none">
       <span class="label">Usuarios (vendedoras)</span>
@@ -361,7 +363,7 @@ const ACCION={pendiente:"Aprobar · En camino",en_camino:"Confirmar entregado"};
 let pin=store.get("od_pin")||"", pedidos=[], fEstado="pendiente", cargado=false;
 $("fTienda").innerHTML+=TIENDAS.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join("");
 
-function entrarUI(on){$("viewLogin").hidden=on;$("viewAdmin").hidden=!on;$("salir").hidden=!on;if(on){cargar();cargarUsuarios();}}
+function entrarUI(on){$("viewLogin").hidden=on;$("viewAdmin").hidden=!on;$("salir").hidden=!on;$("tabT").hidden=$("tabD").hidden=!on;if(!on)setTab("t");if(on){cargar();cargarUsuarios();}}
 $("loginForm").addEventListener("submit",async e=>{
   e.preventDefault();$("loginErr").hidden=true;const v=$("pin").value.trim();if(!v)return;
   $("entrar").disabled=true;$("entrar").textContent="Verificando…";
@@ -398,7 +400,35 @@ function renderList(){
   $("ticketList").querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>mover(b.dataset.next,1,b));
   $("ticketList").querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>mover(b.dataset.back,-1,b));
 }
-function renderAll(){renderKpis();renderChips();renderList();}
+function lunes(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
+const DIAS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const fcorta=d=>d.toLocaleDateString("es-PE",{day:"numeric",month:"short"});
+function initSem(){const l0=lunes(new Date());let h="";for(let i=0;i<8;i++){const a=new Date(l0);a.setDate(a.getDate()-7*i);const b=new Date(a);b.setDate(b.getDate()+6);h+=`<option value="${a.getTime()}">${i===0?"Esta semana":i===1?"Semana pasada":"Semana"} · ${fcorta(a)} – ${fcorta(b)}</option>`;}$("dSem").innerHTML=h;$("dSem").onchange=renderDash;}
+function barRows(rows){const m=Math.max(1,...rows.map(r=>r.v));return rows.map(r=>`<div style="display:grid;grid-template-columns:minmax(90px,160px) 1fr auto;gap:10px;align-items:center;margin:7px 0;font-size:14px"><span>${r.l}</span><span style="background:var(--accent-soft);border-radius:99px;height:12px;overflow:hidden"><i style="display:block;height:100%;width:${r.v/m*100}%;background:var(--accent);border-radius:99px"></i></span><b>${r.t}</b></div>`).join("");}
+function renderDash(){
+  const o=$("dOut");if(!o)return;
+  if(!cargado){o.innerHTML='<div class="none">Cargando…</div>';return;}
+  const a=+$("dSem").value,b=a+7*864e5;
+  const L=pedidos.filter(p=>p.creado>=a&&p.creado<b);
+  if(!L.length){o.innerHTML='<div class="none">No hubo pedidos en esta semana.</div>';return;}
+  const un=p=>p.items.reduce((s,i)=>s+(i.q||0),0);
+  const U=L.reduce((s,p)=>s+un(p),0);
+  const tie={},ven={},dia=DIAS.map(()=>({n:0,u:0}));
+  TIENDAS.forEach(t=>tie[t.nombre]={n:0,u:0});
+  L.forEach(p=>{const u=un(p);const t=tie[p.tiendaNombre]||(tie[p.tiendaNombre]={n:0,u:0});t.n++;t.u+=u;const k=p.vendedora+"|"+p.tiendaNombre;const v=ven[k]||(ven[k]={vend:p.vendedora,tienda:p.tiendaNombre,n:0,u:0});v.n++;v.u+=u;const d=dia[(new Date(p.creado).getDay()+6)%7];d.n++;d.u+=u;});
+  const pk=dia.reduce((m,d,i)=>d.n>dia[m].n?i:m,0);
+  const tt=Object.entries(tie).sort((x,y)=>y[1].n-x[1].n||y[1].u-x[1].u);
+  const vv=Object.values(ven).sort((x,y)=>y.n-x.n||y.u-x.u);
+  const H=t=>`<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#7a6a70);margin:20px 0 6px">${t}</div>`;
+  o.innerHTML=`<div class="kpis"><div class="kpi"><span class="kv">${L.length}</span><span class="kl">Pedidos</span></div><div class="kpi"><span class="kv">${U}</span><span class="kl">Unidades</span></div><div class="kpi"><span class="kv">${DIAS[pk]}</span><span class="kl">Día más movido</span></div></div>`
+  +H("Pedidos por tienda")+barRows(tt.map(([n,v])=>({l:esc(n),v:v.n,t:`${v.n} ped. · ${v.u} unid.`})))
+  +H("Ranking de vendedoras")+barRows(vv.map((v,i)=>({l:`${i+1}. ${esc(v.vend)} <small style="color:var(--muted,#7a6a70)">${esc(v.tienda)}</small>`,v:v.n,t:`${v.n} ped. · ${v.u} unid.`})))
+  +H("Movimiento por día")+barRows(dia.map((d,i)=>({l:DIAS[i]+(i===pk?" ★":""),v:d.n,t:`${d.n} ped. · ${d.u} unid.`})));
+}
+initSem();
+function setTab(t){$("viewAdmin").dataset.tab=t;$("tabT").setAttribute("aria-selected",t==="t");$("tabD").setAttribute("aria-selected",t==="d");if(t==="d")renderDash();}
+$("tabT").onclick=()=>setTab("t");$("tabD").onclick=()=>setTab("d");
+function renderAll(){renderKpis();renderChips();renderList();renderDash();}
 $("fTienda").onchange=renderAll;$("fBuscar").addEventListener("input",renderList);
 
 async function mover(num,dir,btn){
