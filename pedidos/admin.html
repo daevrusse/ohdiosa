@@ -152,6 +152,31 @@ textarea{min-height:64px;resize:vertical}
 .stack{display:grid;gap:22px}.stack-sm{display:grid;gap:8px}.row{display:flex;gap:8px;flex-wrap:wrap}
 .tabnote{padding:10px 0;font-weight:600;color:var(--ink);border-bottom:3px solid var(--accent)}
 #viewAdmin[data-tab=d]>:not(#dashBox){display:none}#viewAdmin:not([data-tab=d])>#dashBox{display:none}
+.dwrap{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;margin:16px 0;box-shadow:var(--shadow)}
+.dctl{display:grid;gap:10px;margin-bottom:14px}
+.dchips,.drow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dchips button,.dseg button{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 13px;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer}
+.dchips button[aria-pressed=true],.dseg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.dseg{display:flex;gap:4px}
+.drow label{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);font-weight:600}
+.drow input,.drow select{width:auto;min-width:0;padding:8px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:14px;letter-spacing:0;text-align:left}
+.kpis.dk{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.dl{font-size:11px;font-weight:700}.dl.up{color:var(--ok)}.dl.dn{color:var(--danger)}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-top:14px}
+.dc{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--surface);min-width:0}.dc.wide{grid-column:1/-1}
+.dc h4{margin:0 0 10px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.vb{display:flex;align-items:stretch;gap:4px;height:190px}
+.vbc{flex:1;min-width:0;display:grid;grid-template-rows:16px 1fr 18px;justify-items:center}
+.vbb{display:flex;align-items:flex-end;width:100%;height:100%}
+.vbb i{display:block;width:100%;min-height:2px;background:var(--accent);opacity:.75;border-radius:6px 6px 0 0;transform-origin:bottom;animation:grow .5s ease both}
+.vbc:hover .vbb i,.vbb i.pk{opacity:1}.vbb i.pk{background:#E0457B}
+.vbv{font-size:11px;font-weight:700;color:var(--ink)}.vbl{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden}
+.vb.dense .vbv{visibility:hidden}.vb.dense .vbc:hover .vbv{visibility:visible}
+@keyframes grow{from{transform:scaleY(0)}}
+.hb{border:0;background:none;margin:0;font-family:inherit;text-align:left;box-sizing:border-box;display:grid;grid-template-columns:minmax(60px,110px) 1fr auto;gap:10px;align-items:center;width:100%;padding:5px 6px;border-radius:10px;font-size:14px;color:var(--ink)}
+button.hb{cursor:pointer}button.hb:hover,.hb.on{background:var(--accent-soft)}
+.hb .ht{min-width:60px;background:var(--sunk);border-radius:99px;height:12px;overflow:hidden}.hb .ht i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .4s}
+.hb b{white-space:nowrap}.hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 nav.tabs{align-items:center}
 .login{max-width:380px;display:grid;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:var(--shadow)}
 .login p{margin:0}
@@ -257,7 +282,7 @@ input[type=text]{padding-left:18px}
       <button class="btn sm ghost" id="refrescar">Actualizar</button>
     </div>
     <span class="err" id="actErr" hidden></span>
-<div class="login" id="dashBox" style="margin:16px 0;max-width:none"><div style="margin-bottom:12px"><select id="dSem" aria-label="Semana"></select></div><div id="dOut"></div></div>
+<div class="dwrap" id="dashBox"><div class="dctl"><div class="dchips" id="dChips"><button type="button" data-pre="hoy">Hoy</button><button type="button" data-pre="ayer">Ayer</button><button type="button" data-pre="sem">Esta semana</button><button type="button" data-pre="7">7 días</button><button type="button" data-pre="30">30 días</button><button type="button" data-pre="mes">Este mes</button><button type="button" data-pre="mesant">Mes pasado</button><button type="button" data-pre="90">90 días</button><button type="button" data-pre="todo">Todo</button></div><div class="drow"><label>Desde <input type="date" id="dDesde"></label><label>Hasta <input type="date" id="dHasta"></label><select id="dTienda" aria-label="Tienda"><option value="">Todas las tiendas</option></select><select id="dVend" aria-label="Vendedora"><option value="">Todas las vendedoras</option></select><div class="dseg" id="dSeg"><button type="button" data-met="n">Pedidos</button><button type="button" data-met="u">Unidades</button></div><button type="button" class="btn sm ghost" id="dRef">Actualizar</button></div></div><div id="dOut"></div></div>
     <div class="tickets" id="ticketList"></div>
     <div class="login" id="userBox" style="margin-top:28px;max-width:none">
       <span class="label">Usuarios (vendedoras)</span>
@@ -400,35 +425,100 @@ function renderList(){
   $("ticketList").querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>mover(b.dataset.next,1,b));
   $("ticketList").querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>mover(b.dataset.back,-1,b));
 }
-function lunes(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
-const DIAS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
-const fcorta=d=>d.toLocaleDateString("es-PE",{day:"numeric",month:"short"});
-function initSem(){const l0=lunes(new Date());let h="";for(let i=0;i<8;i++){const a=new Date(l0);a.setDate(a.getDate()-7*i);const b=new Date(a);b.setDate(b.getDate()+6);h+=`<option value="${a.getTime()}">${i===0?"Esta semana":i===1?"Semana pasada":"Semana"} · ${fcorta(a)} – ${fcorta(b)}</option>`;}$("dSem").innerHTML=h;$("dSem").onchange=renderDash;}
-function barRows(rows){const m=Math.max(1,...rows.map(r=>r.v));return rows.map(r=>`<div style="display:grid;grid-template-columns:minmax(90px,160px) 1fr auto;gap:10px;align-items:center;margin:7px 0;font-size:14px"><span>${r.l}</span><span style="background:var(--accent-soft);border-radius:99px;height:12px;overflow:hidden"><i style="display:block;height:100%;width:${r.v/m*100}%;background:var(--accent);border-radius:99px"></i></span><b>${r.t}</b></div>`).join("");}
+const DIAS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"],DC=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"],MESES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"],DAY=864e5;
+let dped=null,dAt=0,dErr="",D={pre:"7",desde:"",hasta:"",tienda:"",vend:"",met:"n"};
+const dz=d=>{const x=new Date(d);x.setHours(0,0,0,0);return x;};
+const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+const lunes=d=>addD(dz(d),-((dz(d).getDay()+6)%7));
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const pymd=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
+const fd=d=>d.getDate()+" "+MESES[d.getMonth()];
+const unid=p=>p.items.reduce((s,i)=>s+(i.q||0),0);
+function setPre(pre){
+  const t=dz(new Date());let a=t,b=t;
+  if(pre==="ayer")a=b=addD(t,-1);else if(pre==="sem")a=lunes(t);else if(pre==="7")a=addD(t,-6);else if(pre==="30")a=addD(t,-29);else if(pre==="90")a=addD(t,-89);
+  else if(pre==="mes")a=new Date(t.getFullYear(),t.getMonth(),1);
+  else if(pre==="mesant"){a=new Date(t.getFullYear(),t.getMonth()-1,1);b=new Date(t.getFullYear(),t.getMonth(),0);}
+  else if(pre==="todo"){a=dped&&dped.length?dz(Math.min(...dped.map(p=>p.creado))):t;}
+  D.pre=pre;D.desde=ymd(a);D.hasta=ymd(b);
+}
+function dfilter(from,to){return dped.filter(p=>p.creado>=from&&p.creado<to&&(!D.tienda||p.tienda===D.tienda)&&(!D.vend||p.vendedora===D.vend));}
+function buckets(a,b){
+  const n=Math.round((b-a)/DAY)+1,mode=n<=45?"d":n<=200?"w":"m",out=[];
+  if(mode==="d")for(let d=a;d<=b;d=addD(d,1))out.push({l:n<=14?DC[(d.getDay()+6)%7]+" "+d.getDate():String(d.getDate()),t:DIAS[(d.getDay()+6)%7]+" "+fd(d)});
+  else if(mode==="w")for(let d=lunes(a);d<=b;d=addD(d,7))out.push({l:fd(d),t:"Semana del "+fd(d)});
+  else for(let d=new Date(a.getFullYear(),a.getMonth(),1);d<=b;d=new Date(d.getFullYear(),d.getMonth()+1,1))out.push({l:MESES[d.getMonth()]+" "+String(d.getFullYear()).slice(2),t:MESES[d.getMonth()]+" "+d.getFullYear()});
+  const idx=ms=>{const c=dz(ms);return mode==="d"?Math.round((c-a)/DAY):mode==="w"?Math.round((lunes(c)-lunes(a))/(7*DAY)):(c.getFullYear()-a.getFullYear())*12+c.getMonth()-a.getMonth();};
+  return {out,idx};
+}
+function vbars(items){
+  const m=Math.max(1,...items.map(i=>i.v)),st=Math.ceil(items.length/14);
+  return `<div class="vb${items.length>16?" dense":""}">`+items.map((i,k)=>`<div class="vbc" title="${esc(i.t)}"><span class="vbv">${i.v||""}</span><div class="vbb"><i${i.hl?' class="pk"':""} style="height:${i.v/m*100}%"></i></div><span class="vbl">${k%st===0?esc(i.l):""}</span></div>`).join("")+`</div>`;
+}
+function hrows(rows,f){
+  const m=Math.max(1,...rows.map(r=>r.v)),tg=f?"button":"div";
+  return rows.length?rows.map(r=>`<${tg}${f?' type="button"':""} class="hb${r.on?" on":""}"${f?` data-f="${f}" data-v="${esc(r.k)}"`:""} title="${esc(r.n||"")}"><span class="hl">${r.l}</span><span class="ht"><i style="width:${r.v/m*100}%"></i></span><b>${r.t}</b></${tg}>`).join(""):'<div class="none">Sin datos</div>';
+}
 function renderDash(){
   const o=$("dOut");if(!o)return;
-  if(!cargado){o.innerHTML='<div class="none">Cargando…</div>';return;}
-  const a=+$("dSem").value,b=a+7*864e5;
-  const L=pedidos.filter(p=>p.creado>=a&&p.creado<b);
-  if(!L.length){o.innerHTML='<div class="none">No hubo pedidos en esta semana.</div>';return;}
-  const un=p=>p.items.reduce((s,i)=>s+(i.q||0),0);
-  const U=L.reduce((s,p)=>s+un(p),0);
-  const tie={},ven={},dia=DIAS.map(()=>({n:0,u:0}));
-  TIENDAS.forEach(t=>tie[t.nombre]={n:0,u:0});
-  L.forEach(p=>{const u=un(p);const t=tie[p.tiendaNombre]||(tie[p.tiendaNombre]={n:0,u:0});t.n++;t.u+=u;const k=p.vendedora+"|"+p.tiendaNombre;const v=ven[k]||(ven[k]={vend:p.vendedora,tienda:p.tiendaNombre,n:0,u:0});v.n++;v.u+=u;const d=dia[(new Date(p.creado).getDay()+6)%7];d.n++;d.u+=u;});
-  const pk=dia.reduce((m,d,i)=>d.n>dia[m].n?i:m,0);
-  const tt=Object.entries(tie).sort((x,y)=>y[1].n-x[1].n||y[1].u-x[1].u);
-  const vv=Object.values(ven).sort((x,y)=>y.n-x.n||y.u-x.u);
-  const H=t=>`<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#7a6a70);margin:20px 0 6px">${t}</div>`;
-  o.innerHTML=`<div class="kpis"><div class="kpi"><span class="kv">${L.length}</span><span class="kl">Pedidos</span></div><div class="kpi"><span class="kv">${U}</span><span class="kl">Unidades</span></div><div class="kpi"><span class="kv">${DIAS[pk]}</span><span class="kl">Día más movido</span></div></div>`
-  +H("Pedidos por tienda")+barRows(tt.map(([n,v])=>({l:esc(n),v:v.n,t:`${v.n} ped. · ${v.u} unid.`})))
-  +H("Ranking de vendedoras")+barRows(vv.map((v,i)=>({l:`${i+1}. ${esc(v.vend)} <small style="color:var(--muted,#7a6a70)">${esc(v.tienda)}</small>`,v:v.n,t:`${v.n} ped. · ${v.u} unid.`})))
-  +H("Movimiento por día")+barRows(dia.map((d,i)=>({l:DIAS[i]+(i===pk?" ★":""),v:d.n,t:`${d.n} ped. · ${d.u} unid.`})));
+  if(dErr){o.innerHTML=`<div class="none">${esc(dErr)}</div>`;return;}
+  if(!dped){o.innerHTML='<div class="none">Cargando…</div>';return;}
+  const vs=[...new Set(dped.map(p=>p.vendedora))].sort((x,y)=>String(x).localeCompare(String(y)));
+  $("dVend").innerHTML='<option value="">Todas las vendedoras</option>'+vs.map(v=>`<option${v===D.vend?" selected":""}>${esc(v)}</option>`).join("");
+  $("dDesde").value=D.desde;$("dHasta").value=D.hasta;$("dTienda").value=D.tienda;
+  $("dChips").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.pre===D.pre));
+  $("dSeg").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.met===D.met));
+  const a=pymd(D.desde),b=pymd(D.hasta);
+  if(a>b){o.innerHTML='<div class="none">La fecha inicial es posterior a la final.</div>';return;}
+  const from=+a,to=+addD(b,1),len=to-from,L=dfilter(from,to),P=D.pre==="todo"?null:dfilter(from-len,from);
+  if(!L.length){o.innerHTML='<div class="none">No hay pedidos con estos filtros.</div>';return;}
+  const mt=D.met==="n"?"Pedidos":"Unidades",val=p=>D.met==="n"?1:unid(p);
+  const N=L.length,U=L.reduce((s,p)=>s+unid(p),0),PN=P?P.length:0,PU=P?P.reduce((s,p)=>s+unid(p),0):0;
+  const dl=(c,p)=>P==null?"":p===0?(c?'<small class="dl up">nuevo</small>':""):`<small class="dl ${c>=p?"up":"dn"}">${c>=p?"▲":"▼"} ${Math.abs(Math.round((c-p)/p*100))}% vs periodo anterior</small>`;
+  const dia=DIAS.map(()=>({n:0,u:0})),tie={},ven={},pro={};
+  TIENDAS.forEach(t=>tie[t.id]={nom:t.nombre,n:0,u:0});
+  const bk=buckets(a,b),ser=bk.out.map(()=>0);
+  L.forEach(p=>{const u=unid(p),v=val(p);
+    const d=dia[(new Date(p.creado).getDay()+6)%7];d.n++;d.u+=u;
+    const t=tie[p.tienda]||(tie[p.tienda]={nom:p.tiendaNombre||p.tienda,n:0,u:0});t.n++;t.u+=u;
+    const w=ven[p.vendedora]||(ven[p.vendedora]={tn:p.tiendaNombre,n:0,u:0});w.n++;w.u+=u;
+    p.items.forEach(i=>{const r=pro[i.c]||(pro[i.c]={n:i.n,q:0});r.q+=i.q||0;});
+    const k=bk.idx(p.creado);if(ser[k]!=null)ser[k]+=v;});
+  const dv=d=>D.met==="n"?d.n:d.u,pk=dia.reduce((m,d,i)=>dv(d)>dv(dia[m])?i:m,0);
+  const tx=x=>`${x.n} ped. · ${x.u} unid.`;
+  const card=(t,h,w)=>`<section class="dc${w?" wide":""}"><h4>${t}</h4>${h}</section>`;
+  const kp=(l,v,x,st)=>`<div class="kpi"><span class="kv"${st?` style="${st}"`:""}>${v}</span><span class="kl">${l}</span>${x||""}</div>`;
+  o.innerHTML=`<div class="kpis dk">`+kp("Pedidos",N,dl(N,PN))+kp("Unidades",U,dl(U,PU))+kp("Unidades por pedido",(U/N).toFixed(1))+kp("Día más movido",DIAS[pk],"","font-size:22px;line-height:1.2")+`</div><div class="dgrid">`
+  +card(mt+" en el tiempo",vbars(bk.out.map((x,i)=>({l:x.l,v:ser[i],t:x.t+": "+ser[i]+" "+mt.toLowerCase()}))),1)
+  +card(mt+" por día de la semana",vbars(dia.map((d,i)=>({l:DC[i],v:dv(d),hl:i===pk,t:DIAS[i]+": "+tx(d)}))))
+  +card(mt+" por tienda <small>(clic para filtrar)</small>",hrows(Object.entries(tie).sort((x,y)=>dv(y[1])-dv(x[1])).map(([k,v])=>({k,l:esc(v.nom),n:v.nom,v:dv(v),t:tx(v),on:D.tienda===k})),"t"))
+  +card("Ranking de vendedoras <small>(clic para filtrar)</small>",hrows(Object.entries(ven).sort((x,y)=>dv(y[1])-dv(x[1])).slice(0,10).map(([k,v],i)=>({k,l:`${i+1}. ${esc(k)}`,n:k+" · "+(v.tn||""),v:dv(v),t:tx(v),on:D.vend===k})),"v"))
+  +card("Productos más pedidos (unidades)",hrows(Object.values(pro).sort((x,y)=>y.q-x.q).slice(0,10).map(r=>({l:esc(r.n),n:r.n,v:r.q,t:r.q+" unid."}))),1)
+  +`</div>`;
 }
-initSem();
-function setTab(t){$("viewAdmin").dataset.tab=t;$("tabT").setAttribute("aria-selected",t==="t");$("tabD").setAttribute("aria-selected",t==="d");if(t==="d")renderDash();}
+async function cargarDash(force){
+  if(!force&&dped&&Date.now()-dAt<60000){renderDash();return;}
+  if(!dped){dErr="";renderDash();}
+  const btn=$("dRef");btn.disabled=true;btn.textContent="Actualizando…";
+  try{const j=await apiGet({action:"listar",limite:3000});dped=j.pedidos||[];dAt=Date.now();dErr="";if(!D.desde)setPre("7");}
+  catch(e){if(!dped)dErr="No se pudieron cargar los pedidos. Revisa tu conexión e intenta de nuevo.";}
+  btn.disabled=false;btn.textContent="Actualizar";renderDash();
+}
+$("dTienda").innerHTML+=TIENDAS.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join("");
+$("dashBox").addEventListener("click",e=>{
+  const c=e.target.closest("[data-pre],[data-met],[data-f]");if(!c)return;
+  if(c.dataset.pre)setPre(c.dataset.pre);else if(c.dataset.met)D.met=c.dataset.met;
+  else{const f=c.dataset.f==="t"?"tienda":"vend";D[f]=D[f]===c.dataset.v?"":c.dataset.v;}
+  renderDash();
+});
+$("dashBox").addEventListener("change",e=>{const t=e.target;
+  if(t.id==="dDesde"||t.id==="dHasta"){D.desde=$("dDesde").value||D.desde;D.hasta=$("dHasta").value||D.hasta;D.pre="";}
+  else if(t.id==="dTienda")D.tienda=t.value;else if(t.id==="dVend")D.vend=t.value;else return;
+  renderDash();});
+$("dRef").onclick=()=>cargarDash(true);
+function setTab(t){$("viewAdmin").dataset.tab=t;$("tabT").setAttribute("aria-selected",t==="t");$("tabD").setAttribute("aria-selected",t==="d");if(t==="d")cargarDash(false);}
 $("tabT").onclick=()=>setTab("t");$("tabD").onclick=()=>setTab("d");
-function renderAll(){renderKpis();renderChips();renderList();renderDash();}
+function renderAll(){renderKpis();renderChips();renderList();}
 $("fTienda").onchange=renderAll;$("fBuscar").addEventListener("input",renderList);
 
 async function mover(num,dir,btn){
