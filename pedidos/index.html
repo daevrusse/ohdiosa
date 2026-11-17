@@ -587,6 +587,25 @@ function renderList(){
   const list=pedidos.filter(p=>fEstado==="todos"||(fEstado==="activos"?p.estado!=="entregado":p.estado===fEstado));
   $("ticketList").innerHTML=list.length?list.map(p=>ticketHTML(p,null,false)).join(""):`<div class="none">No hay pedidos aquí.</div>`;
 }
+(function(){const st=document.createElement("style");st.textContent=`.ticket.col .steps,.ticket.col .t-items{display:none}.t-head{cursor:pointer}.t-head::after{content:"▾";color:var(--muted);transition:transform .2s}.ticket.col .t-head::after{transform:rotate(-90deg)}.vbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:10px 0}.vbar .hint{margin:0}.vmore{width:100%;margin-top:10px}`;document.head.appendChild(st);})();
+const vKeyFn=()=>fEstado;
+let vCompact=store.get("od_vista")!=="full",vOpen=new Set(),vLim=15,vKey="";
+function vApply(){
+  const L=$("ticketList"),ts=[...L.querySelectorAll(".ticket")],k=vKeyFn();
+  if(k!==vKey){vKey=k;vLim=15;}
+  ts.forEach((t,i)=>{const n=t.querySelector(".t-num").textContent;t.classList.toggle("col",vCompact&&!vOpen.has(n));t.hidden=i>=vLim;});
+  const old=L.querySelector(".vmore");if(old)old.remove();
+  if(ts.length>vLim)L.insertAdjacentHTML("beforeend",`<button type="button" class="btn ghost vmore">Mostrar más (${ts.length-vLim} restantes)</button>`);
+  let bar=$("vBar");if(!bar){bar=document.createElement("div");bar.id="vBar";bar.className="vbar";L.parentNode.insertBefore(bar,L);}
+  bar.innerHTML=ts.length?`<span class="hint">${Math.min(vLim,ts.length)} de ${ts.length} pedidos</span><button type="button" class="linkish" id="vTog">${vCompact?"Expandir todo":"Contraer todo"}</button>`:"";
+}
+document.addEventListener("click",e=>{
+  const h=e.target.closest(".t-head");
+  if(h&&h.closest("#ticketList")){const t=h.closest(".ticket"),n=t.querySelector(".t-num").textContent;if(t.classList.toggle("col"))vOpen.delete(n);else vOpen.add(n);return;}
+  if(e.target.closest(".vmore")){vLim+=15;vApply();return;}
+  if(e.target.id==="vTog"){vCompact=!vCompact;vOpen.clear();store.set("od_vista",vCompact?"compact":"full");vApply();}
+});
+const _rl=renderList;renderList=function(){_rl();vApply();};
 let cargando=false;
 async function cargar(){
   renderChips();renderList();
