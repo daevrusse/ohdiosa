@@ -333,10 +333,26 @@ function ticketHTML(p,actions,showStock){
       return `<div class="t-it"><span class="q">${it.q}×</span>${avatar(it,"sm")}<div><div class="n">${esc(it.n)}</div><div class="code">${esc(it.c)}${it.m?" · "+esc(it.m):""}</div></div>${stk}</div>`;}).join("")}</div>
     <div class="t-foot">
       <div class="t-time"><span>Pedido ${fmt(p.creado)} · ${p.items.length} prod. / ${units} unid.</span>${p.estado!=="pendiente"&&last?`<span>${ESTADOS[p.estado]} ${fmt(last.t)}</span>`:""}</div>
-      ${actions?`<div class="t-actions">${actions(p)}</div>`:""}
+      <div class="t-actions">${actions?actions(p):""}<button class="btn sm ghost" type="button" data-dl="${esc(p.num)}">Descargar</button></div>
     </div>
   </article>`;
 }
+
+function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
+async function descargar(num,btn){
+  const p=pedidos.find(x=>x.num===num);if(!p)return;
+  const t0=btn&&btn.textContent;if(btn){btn.disabled=true;btn.textContent="Preparando…";}
+  try{
+    await loadXLSX();
+    const units=p.items.reduce((a,b)=>a+(b.q||0),0);
+    const rows=[["N° de atención",p.num],["Tienda",p.tiendaNombre],["Vendedora",p.vendedora],["Estado",ESTADOS[p.estado]||p.estado],["Fecha del pedido",fmt(p.creado)],[],["Código","Producto","Marca","Cantidad"]].concat(p.items.map(i=>[String(i.c),i.n,i.m||"",i.q]),[[],["","","Total unidades",units]]);
+    const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=[{wch:16},{wch:50},{wch:18},{wch:10}];
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Pedido");
+    XLSX.writeFile(wb,p.num+".xlsx");
+  }catch(e){alert("No se pudo generar el archivo. Revisa tu internet e intenta de nuevo.");}
+  finally{if(btn){btn.disabled=false;btn.textContent=t0;}}
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-dl]");if(b)descargar(b.dataset.dl,b);});
 
 const SIG={pendiente:"en_camino",en_camino:"entregado"};
 const PREV={en_camino:"pendiente",entregado:"en_camino"};
