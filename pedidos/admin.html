@@ -334,7 +334,9 @@ async function apiPost(body){
 }
 
 let catalog=[],idx=[],byKey=new Map(),onCatalog=()=>{};
-fetch("catalogo.json",{cache:"no-cache"}).then(r=>r.json()).then(rows=>{
+const loadCat=()=>Promise.race([apiGet({action:"catalogo"}),new Promise((_,rj)=>setTimeout(rj,7000))]).then(j=>{if(!j.filas||!j.filas.length)throw 0;window.baseFecha=j.fecha;return j.filas;})
+  .catch(()=>fetch("catalogo.json",{cache:"no-cache"}).then(r=>r.json()));
+loadCat().then(rows=>{
   catalog=rows.map(r=>({c:r[0],n:r[1],m:r[2],p:r[3],s:r[4]}));
   idx=catalog.map(p=>({p,t:norm(p.n+" "+p.m),c:norm(p.c)}));
   catalog.forEach(p=>byKey.set(p.c+"|"+p.n,p));
@@ -382,6 +384,23 @@ async function descargar(num,btn){
 }
 document.addEventListener("click",e=>{const b=e.target.closest("[data-dl]");if(b)descargar(b.dataset.dl,b);});
 
+(function(){const st=document.createElement("style");st.textContent=`#edDlg{border:0;border-radius:18px;padding:0;width:min(640px,94vw);max-height:90vh;background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.3)}#edDlg::backdrop{background:rgba(30,15,25,.45)}.edi{padding:18px;display:grid;gap:12px}.edi h3{margin:0;font-size:18px}.edl{display:grid;gap:8px;max-height:36vh;overflow:auto}.edr{display:grid;grid-template-columns:1fr 84px auto;gap:8px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:12px}.edr input{width:84px;padding:8px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;text-align:center}.edr .x{background:none;border:0;color:var(--danger);font-size:18px;cursor:pointer}.edr small,.edres small{color:var(--muted);display:block}.edres{display:grid;gap:4px;max-height:24vh;overflow:auto}.edres button{text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 10px;cursor:pointer;font:inherit;font-size:14px}.edres button:hover{background:var(--accent-soft)}.edf{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap}#edQ{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}`;document.head.appendChild(st);
+const dg=document.createElement("dialog");dg.id="edDlg";dg.innerHTML=`<div class="edi"><h3 id="edT"></h3><div class="edl" id="edL"></div><input id="edQ" type="text" placeholder="Agregar producto: busca por nombre, marca o código" autocomplete="off"><div class="edres" id="edR"></div><span class="err" id="edE" hidden></span><div class="edf"><button type="button" class="btn ghost" id="edC">Cancelar</button><button type="button" class="btn" id="edS">Guardar cambios</button></div></div>`;document.body.appendChild(dg);})();
+let edNum="",edItems=[];
+function edDraw(){$("edT").textContent="Editar pedido "+edNum;$("edL").innerHTML=edItems.map((it,i)=>{const s=stockOf(it);return `<div class="edr"><div><b>${esc(it.n)}</b><small>${esc(it.c)}${it.m?" · "+esc(it.m):""} · Almacén: ${s==null?"—":s}</small></div><input type="number" min="1" max="9999" value="${it.q}" data-i="${i}" aria-label="Cantidad"><button type="button" class="x" data-rm="${i}" aria-label="Quitar">✕</button></div>`;}).join("")||'<div class="none">Sin productos</div>';}
+function abrirEd(num){const p=pedidos.find(x=>x.num===num);if(!p)return;edNum=num;edItems=p.items.map(i=>({...i}));$("edE").hidden=true;$("edQ").value="";$("edR").innerHTML="";edDraw();$("edDlg").showModal();}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)abrirEd(b.dataset.edit);});
+$("edL").addEventListener("input",e=>{const t=e.target;if(t.dataset.i!=null)edItems[+t.dataset.i].q=Math.max(1,Math.min(9999,parseInt(t.value,10)||1));});
+$("edL").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(b){edItems.splice(+b.dataset.rm,1);edDraw();}});
+$("edQ").addEventListener("input",()=>{const q=norm($("edQ").value.trim());if(q.length<2){$("edR").innerHTML="";return;}const ws=q.split(/\s+/);const r=idx.filter(x=>ws.every(w=>x.t.includes(w)||x.c.includes(w))).sort((a,b)=>((b.p.s||0)>0)-((a.p.s||0)>0)).slice(0,8);$("edR").innerHTML=r.length?r.map(x=>`<button type="button" data-add="${esc(x.p.c)}|${esc(x.p.n)}">${esc(x.p.n)}<small>${esc(x.p.m||"")} · Almacén: ${x.p.s==null?"—":x.p.s}</small></button>`).join(""):'<div class="none">Sin resultados</div>';});
+$("edR").addEventListener("click",e=>{const b=e.target.closest("[data-add]");if(!b)return;const p=byKey.get(b.dataset.add);if(!p)return;const ex=edItems.find(i=>i.c===p.c&&i.n===p.n);if(ex)ex.q+=1;else edItems.push({c:p.c,n:p.n,m:p.m||"",q:1});$("edQ").value="";$("edR").innerHTML="";edDraw();});
+$("edC").onclick=()=>$("edDlg").close();
+$("edS").onclick=async()=>{const b=$("edS");if(!edItems.length){$("edE").textContent="El pedido debe tener al menos un producto.";$("edE").hidden=false;return;}
+  b.disabled=true;b.textContent="Guardando…";$("edE").hidden=true;
+  try{const j=await apiPost({action:"pedido_editar",num:edNum,items:edItems,pin});if(!j.ok)throw new Error(j.error||"error");
+    const p=pedidos.find(x=>x.num===edNum);if(p)p.items=j.items;dAt=0;$("edDlg").close();renderAll();
+  }catch(err){$("edE").textContent="No se pudo guardar: "+(err.message||"sin conexión");$("edE").hidden=false;}
+  finally{b.disabled=false;b.textContent="Guardar cambios";}};
 const SIG={pendiente:"en_camino",en_camino:"entregado"};
 const PREV={en_camino:"pendiente",entregado:"en_camino"};
 const ACCION={pendiente:"Aprobar · En camino",en_camino:"Confirmar entregado"};
@@ -416,7 +435,7 @@ function renderChips(){
   $("estadoChips").innerHTML=opts.map(([k,l])=>`<button type="button" class="chip" data-e="${k}" aria-pressed="${fEstado===k}">${l} <span class="c">${cnt(k)}</span></button>`).join("");
   $("estadoChips").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{fEstado=b.dataset.e;renderChips();renderList();});
 }
-const acciones=p=>(PREV[p.estado]?`<button class="linkish" data-back="${esc(p.num)}">Deshacer</button>`:"")+(SIG[p.estado]?`<button class="btn sm" data-next="${esc(p.num)}">${ACCION[p.estado]}</button>`:"");
+const acciones=p=>`<button class="linkish" data-edit="${esc(p.num)}">Editar</button>`+(PREV[p.estado]?`<button class="linkish" data-back="${esc(p.num)}">Deshacer</button>`:"")+(SIG[p.estado]?`<button class="btn sm" data-next="${esc(p.num)}">${ACCION[p.estado]}</button>`:"");
 function renderList(){
   const ft=$("fTienda").value,fq=norm($("fBuscar").value.trim());
   const list=pedidos.filter(p=>(fEstado==="todos"||p.estado===fEstado)&&(!ft||p.tienda===ft)&&(!fq||norm(p.num+" "+p.vendedora).includes(fq)));
