@@ -124,7 +124,7 @@ textarea{min-height:64px;resize:vertical}
 .ticket{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
 .ticket.s-pendiente{border-left:5px solid var(--pend)}
 .ticket.s-en_camino{border-left:5px solid var(--ruta)}
-.ticket.s-entregado{border-left:5px solid var(--ok)}
+.ticket.s-entregado{border-left:5px solid var(--ok)}.ticket.s-cancelado{border-left:5px solid var(--danger);opacity:.78}.pill.cancelado{background:var(--sunk);color:var(--danger);border:1px solid var(--danger)}.ticket.s-cancelado .t-it .n,.ticket.s-cancelado .t-it .q{text-decoration:line-through;color:var(--muted)}.cancel-note{margin:0 14px 12px;padding:8px 12px;border-radius:10px;background:var(--sunk);color:var(--danger);font-size:13px;font-weight:600}
 .t-head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:12px 14px}
 .t-num{font:700 18px var(--mono)}
 .t-who{font-size:13px;color:var(--muted)}
@@ -345,7 +345,7 @@ input[type=text]{padding-left:18px}
 <script>
 const API="https://script.google.com/macros/s/AKfycbzMsg4QAbVRZlhnxHmFy14Ef3CtaTwKhLTvL2Qc3FFSDQazr44gHSr2uJWR_kzPhJ5V/exec";
 const TIENDAS=[{id:"CAJ",nombre:"Cajamarca"},{id:"MAN",nombre:"Mantaro"},{id:"ANC",nombre:"Ancash"}];
-const ESTADOS={pendiente:"Pendiente",en_camino:"En camino",entregado:"Entregado"};
+const ESTADOS={pendiente:"Pendiente",en_camino:"En camino",entregado:"Entregado",cancelado:"Cancelado"};
 const $=id=>document.getElementById(id);
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -355,7 +355,7 @@ const hue=s=>{let h=0;for(const ch of String(s||"?"))h=(h*31+ch.charCodeAt(0))%3
 const initials=s=>{const w=String(s||"").trim().split(/[\s&.]+/).filter(Boolean);return((w[0]||"?")[0]+(w[1]?w[1][0]:"")).toUpperCase()};
 const avatar=(it,cls="")=>{const k=(it.m&&it.m!=="OTRO")?it.m:it.n;return `<span class="av ${cls}" style="--h:${hue(k)}" aria-hidden="true">${esc(initials(k))}</span>`};
 const storeAv=(id,nombre,cls="")=>`<span class="av ${cls}" style="--h:${({CAJ:340,MAN:205,ANC:150})[id]??300}" aria-hidden="true">${esc((nombre||id||"?")[0])}</span>`;
-const stepsHTML=e=>{const o=["pendiente","en_camino","entregado"],i=o.indexOf(e);
+const stepsHTML=e=>{if(e==="cancelado")return `<div class="cancel-note">✕ Pedido cancelado — no se atenderá</div>`;const o=["pendiente","en_camino","entregado"],i=o.indexOf(e);
   return `<div class="steps">${o.map((k,j)=>`${j?`<span class="stp-line${j<=i?" on":""}"></span>`:""}<span class="stp${j<=i?" on":""}"><i>${j<=i?"✓":""}</i>${ESTADOS[k]}</span>`).join("")}</div>`};
 const fmt=t=>t?new Date(t).toLocaleString("es-PE",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"";
 
@@ -572,19 +572,19 @@ $("verMis").onclick=()=>showTab("mis");
 
 /* Mis pedidos (solo lectura) */
 function renderChips(){
-  const cnt=k=>pedidos.filter(p=>k==="todos"||(k==="activos"?p.estado!=="entregado":p.estado===k)).length;
-  const opts=[["activos","Por atender"],["entregado","Entregados"],["todos","Todos"]];
+  const cnt=k=>pedidos.filter(p=>k==="todos"||(k==="activos"?!["entregado","cancelado"].includes(p.estado):p.estado===k)).length;
+  const opts=[["activos","Por atender"],["entregado","Entregados"],["cancelado","Cancelados"],["todos","Todos"]];
   $("estadoChips").innerHTML=opts.map(([k,l])=>`<button type="button" class="chip" data-e="${k}" aria-pressed="${fEstado===k}">${l} <span class="c">${cnt(k)}</span></button>`).join("");
   $("estadoChips").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{fEstado=b.dataset.e;renderChips();renderList();});
 }
 function renderList(){
-  const act=pedidos.filter(p=>p.estado!=="entregado").length;
+  const act=pedidos.filter(p=>!["entregado","cancelado"].includes(p.estado)).length;
   $("pendBadge").textContent=act;$("pendBadge").hidden=!act;
   const t=TIENDAS.find(x=>x.id===tienda);
   $("misTienda").textContent=sess?`Pedidos de ${sess.nombre}`:"";
   if(!sess){$("ticketList").innerHTML=`<div class="none">Entra con tu usuario en “Nuevo pedido” para ver tus pedidos.</div>`;return;}
   if(!cargado){$("ticketList").innerHTML=`<div class="none">Cargando…</div>`;return;}
-  const list=pedidos.filter(p=>fEstado==="todos"||(fEstado==="activos"?p.estado!=="entregado":p.estado===fEstado));
+  const list=pedidos.filter(p=>fEstado==="todos"||(fEstado==="activos"?!["entregado","cancelado"].includes(p.estado):p.estado===fEstado));
   $("ticketList").innerHTML=list.length?list.map(p=>ticketHTML(p,null,false)).join(""):`<div class="none">No hay pedidos aquí.</div>`;
 }
 (function(){const st=document.createElement("style");st.textContent=`.ticket.col .steps,.ticket.col .t-items{display:none}.t-head{cursor:pointer}.t-head::after{content:"▾";color:var(--muted);transition:transform .2s}.ticket.col .t-head::after{transform:rotate(-90deg)}.vbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:10px 0}.vbar .hint{margin:0}.vmore{width:100%;margin-top:10px}`;document.head.appendChild(st);})();
