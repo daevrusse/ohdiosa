@@ -124,7 +124,7 @@ textarea{min-height:64px;resize:vertical}
 .ticket{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
 .ticket.s-pendiente{border-left:5px solid var(--pend)}
 .ticket.s-en_camino{border-left:5px solid var(--ruta)}
-.ticket.s-entregado{border-left:5px solid var(--ok)}
+.ticket.s-entregado{border-left:5px solid var(--ok)}.ticket.s-cancelado{border-left:5px solid var(--danger);opacity:.78}.pill.cancelado{background:var(--sunk);color:var(--danger);border:1px solid var(--danger)}.ticket.s-cancelado .t-it .n,.ticket.s-cancelado .t-it .q{text-decoration:line-through;color:var(--muted)}.cancel-note{margin:0 14px 12px;padding:8px 12px;border-radius:10px;background:var(--sunk);color:var(--danger);font-size:13px;font-weight:600}
 .t-head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:12px 14px}
 .t-num{font:700 18px var(--mono)}
 .t-who{font-size:13px;color:var(--muted)}
@@ -145,7 +145,7 @@ textarea{min-height:64px;resize:vertical}
 .t-time{font-size:12px;color:var(--muted);display:grid;gap:2px}
 .t-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
 .dl-btn{background:var(--accent);color:var(--accent-ink);border:0;font-weight:700;font-size:14px;padding:10px 16px;border-radius:999px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}.dl-btn:disabled{opacity:.6}
-.linkish{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px}
+.linkish.cancel-btn{color:var(--danger)}.linkish.cancel-btn.armed{font-weight:700;text-decoration:none;background:var(--sunk);border-radius:999px;padding:6px 10px}.linkish{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px}
 .none{padding:30px 10px;text-align:center;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.ticket{transition:border-color .2s}}
 
@@ -310,7 +310,7 @@ input[type=text]{padding-left:18px}
 <script>
 const API="https://script.google.com/macros/s/AKfycbzMsg4QAbVRZlhnxHmFy14Ef3CtaTwKhLTvL2Qc3FFSDQazr44gHSr2uJWR_kzPhJ5V/exec";
 const TIENDAS=[{id:"CAJ",nombre:"Cajamarca"},{id:"MAN",nombre:"Mantaro"},{id:"ANC",nombre:"Ancash"}];
-const ESTADOS={pendiente:"Pendiente",en_camino:"En camino",entregado:"Entregado"};
+const ESTADOS={pendiente:"Pendiente",en_camino:"En camino",entregado:"Entregado",cancelado:"Cancelado"};
 const $=id=>document.getElementById(id);
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -320,7 +320,7 @@ const hue=s=>{let h=0;for(const ch of String(s||"?"))h=(h*31+ch.charCodeAt(0))%3
 const initials=s=>{const w=String(s||"").trim().split(/[\s&.]+/).filter(Boolean);return((w[0]||"?")[0]+(w[1]?w[1][0]:"")).toUpperCase()};
 const avatar=(it,cls="")=>{const k=(it.m&&it.m!=="OTRO")?it.m:it.n;return `<span class="av ${cls}" style="--h:${hue(k)}" aria-hidden="true">${esc(initials(k))}</span>`};
 const storeAv=(id,nombre,cls="")=>`<span class="av ${cls}" style="--h:${({CAJ:340,MAN:205,ANC:150})[id]??300}" aria-hidden="true">${esc((nombre||id||"?")[0])}</span>`;
-const stepsHTML=e=>{const o=["pendiente","en_camino","entregado"],i=o.indexOf(e);
+const stepsHTML=e=>{if(e==="cancelado")return `<div class="cancel-note">✕ Pedido cancelado — no se atenderá</div>`;const o=["pendiente","en_camino","entregado"],i=o.indexOf(e);
   return `<div class="steps">${o.map((k,j)=>`${j?`<span class="stp-line${j<=i?" on":""}"></span>`:""}<span class="stp${j<=i?" on":""}"><i>${j<=i?"✓":""}</i>${ESTADOS[k]}</span>`).join("")}</div>`};
 const fmt=t=>t?new Date(t).toLocaleString("es-PE",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"";
 
@@ -431,11 +431,11 @@ function renderKpis(){
 function renderChips(){
   const ft=$("fTienda").value;
   const cnt=e=>pedidos.filter(p=>(e==="todos"||p.estado===e)&&(!ft||p.tienda===ft)).length;
-  const opts=[["pendiente","Pendientes"],["en_camino","En camino"],["entregado","Entregados"],["todos","Todos"]];
+  const opts=[["pendiente","Pendientes"],["en_camino","En camino"],["entregado","Entregados"],["cancelado","Cancelados"],["todos","Todos"]];
   $("estadoChips").innerHTML=opts.map(([k,l])=>`<button type="button" class="chip" data-e="${k}" aria-pressed="${fEstado===k}">${l} <span class="c">${cnt(k)}</span></button>`).join("");
   $("estadoChips").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{fEstado=b.dataset.e;renderChips();renderList();});
 }
-const acciones=p=>`<button class="linkish" data-edit="${esc(p.num)}">Editar</button>`+(PREV[p.estado]?`<button class="linkish" data-back="${esc(p.num)}">Deshacer</button>`:"")+(SIG[p.estado]?`<button class="btn sm" data-next="${esc(p.num)}">${ACCION[p.estado]}</button>`:"");
+const acciones=p=>p.estado==="cancelado"?`<button class="linkish" data-reac="${esc(p.num)}">Reactivar pedido</button>`:`<button class="linkish" data-edit="${esc(p.num)}">Editar</button>`+(p.estado!=="entregado"?`<button class="linkish cancel-btn" data-cancel="${esc(p.num)}">Cancelar pedido</button>`:"")+(PREV[p.estado]?`<button class="linkish" data-back="${esc(p.num)}">Deshacer</button>`:"")+(SIG[p.estado]?`<button class="btn sm" data-next="${esc(p.num)}">${ACCION[p.estado]}</button>`:"");
 function renderList(){
   const ft=$("fTienda").value,fq=norm($("fBuscar").value.trim());
   const list=pedidos.filter(p=>(fEstado==="todos"||p.estado===fEstado)&&(!ft||p.tienda===ft)&&(!fq||norm(p.num+" "+p.vendedora).includes(fq)));
@@ -443,6 +443,10 @@ function renderList(){
   $("ticketList").innerHTML=!cargado?`<div class="none">Cargando…</div>`:list.length?list.map(p=>ticketHTML(p,acciones,true)).join(""):`<div class="none">${fEstado==="pendiente"?"No hay pedidos pendientes.":"No hay tickets con estos filtros."}</div>`;
   $("ticketList").querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>mover(b.dataset.next,1,b));
   $("ticketList").querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>mover(b.dataset.back,-1,b));
+  $("ticketList").querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>{
+    if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="¿Seguro? Toca otra vez para cancelar";clearTimeout(b._t);b._t=setTimeout(()=>{b.classList.remove("armed");b.textContent="Cancelar pedido";},4000);return;}
+    clearTimeout(b._t);fijarEstado(b.dataset.cancel,"cancelado",b);});
+  $("ticketList").querySelectorAll("[data-reac]").forEach(b=>b.onclick=()=>fijarEstado(b.dataset.reac,"pendiente",b));
 }
 const DIAS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"],DC=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"],MESES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"],DAY=864e5;
 let dped=null,dAt=0,dErr="",D={pre:"7",desde:"",hasta:"",tienda:"",vend:"",met:"n"};
@@ -461,7 +465,7 @@ function setPre(pre){
   else if(pre==="todo"){a=dped&&dped.length?dz(Math.min(...dped.map(p=>p.creado))):t;}
   D.pre=pre;D.desde=ymd(a);D.hasta=ymd(b);
 }
-function dfilter(from,to){return dped.filter(p=>p.creado>=from&&p.creado<to&&(!D.tienda||p.tienda===D.tienda)&&(!D.vend||p.vendedora===D.vend));}
+function dfilter(from,to){return dped.filter(p=>p.estado!=="cancelado"&&p.creado>=from&&p.creado<to&&(!D.tienda||p.tienda===D.tienda)&&(!D.vend||p.vendedora===D.vend));}
 function buckets(a,b){
   const n=Math.round((b-a)/DAY)+1,mode=n<=45?"d":n<=200?"w":"m",out=[];
   if(mode==="d")for(let d=a;d<=b;d=addD(d,1))out.push({l:n<=14?DC[(d.getDay()+6)%7]+" "+d.getDate():String(d.getDate()),t:DIAS[(d.getDay()+6)%7]+" "+fd(d)});
@@ -562,6 +566,10 @@ $("fTienda").onchange=renderAll;$("fBuscar").addEventListener("input",renderList
 async function mover(num,dir,btn){
   const p=pedidos.find(x=>x.num===num);if(!p)return;
   const e=dir>0?SIG[p.estado]:PREV[p.estado];if(!e)return;
+  return fijarEstado(num,e,btn);
+}
+async function fijarEstado(num,e,btn){
+  const p=pedidos.find(x=>x.num===num);if(!p)return;
   btn.disabled=true;btn.textContent="Guardando…";$("actErr").hidden=true;
   try{
     const j=await apiPost({action:"estado",num,estado:e,pin});
