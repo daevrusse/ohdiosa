@@ -391,14 +391,14 @@ function imprimirTicket(num){
   const now=new Date().toLocaleString("es-PE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
   const rows=p.items.map(i=>`<tr><td class="q">${i.q}</td><td>${esc(i.n)}<div class="c">${esc(i.c)}${i.m?" · "+esc(i.m):""}</div></td></tr>`).join("");
   const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(p.num)}</title><style>
-@page{size:80mm auto;margin:3mm}*{box-sizing:border-box}
-body{margin:0;width:74mm;font:12px/1.35 "Courier New",monospace;color:#000}
-h1{font-size:18px;text-align:center;margin:0 0 2px;letter-spacing:1px}.ctr{text-align:center}
-.sep{border-top:1px dashed #000;margin:6px 0}.num{font-size:20px;font-weight:700;text-align:center;margin:4px 0}
-.kv{display:flex;justify-content:space-between;gap:6px}.kv b{text-align:right}
-table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;border-bottom:1px solid #000;padding:2px 0}
-td{vertical-align:top;padding:3px 0;border-bottom:1px dotted #999}td.q{width:9mm;font-weight:700;font-size:14px}
-.c{font-size:10px;color:#333}.tot{font-weight:700;font-size:13px}.firma{margin-top:22px;border-top:1px solid #000;text-align:center;font-size:11px;padding-top:2px}
+@page{size:48mm auto;margin:1.5mm}*{box-sizing:border-box}
+body{margin:0;width:45mm;font:9px/1.3 "Courier New",monospace;color:#000}
+h1{font-size:13px;text-align:center;margin:0 0 1px;letter-spacing:1px}.ctr{text-align:center}
+.sep{border-top:1px dashed #000;margin:4px 0}.num{font-size:15px;font-weight:700;text-align:center;margin:3px 0}
+.kv{display:flex;justify-content:space-between;gap:4px}.kv b{text-align:right}
+table{width:100%;border-collapse:collapse}th{text-align:left;font-size:8.5px;border-bottom:1px solid #000;padding:1px 0}
+td{vertical-align:top;padding:2px 0;border-bottom:1px dotted #999}td.q{width:6mm;font-weight:700;font-size:10.5px}
+.c{font-size:7.5px;color:#333}.tot{font-weight:700;font-size:10px}.firma{margin-top:16px;border-top:1px solid #000;text-align:center;font-size:8.5px;padding-top:2px}
 </style></head><body>
 <h1>OH! DIOSA</h1><div class="ctr">Ticket de pedido</div><div class="sep"></div>
 <div class="num">${esc(p.num)}</div>
@@ -412,7 +412,7 @@ td{vertical-align:top;padding:3px 0;border-bottom:1px dotted #999}td.q{width:9mm
 <div class="kv tot"><span>Productos:</span><span>${p.items.length}</span></div>
 <div class="kv tot"><span>Total unidades:</span><span>${units}</span></div>
 <div class="firma">Recibido por</div>
-<div class="sep"></div><div class="ctr" style="font-size:10px">Impreso ${now}</div>
+<div class="sep"></div><div class="ctr" style="font-size:7.5px">Impreso ${now}</div>
 </body></html>`;
   let f=document.getElementById("printFrame");if(f)f.remove();
   f=document.createElement("iframe");f.id="printFrame";f.setAttribute("aria-hidden","true");
