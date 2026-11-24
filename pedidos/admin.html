@@ -581,22 +581,24 @@ $("dashBox").addEventListener("change",e=>{const t=e.target;
 $("dRef").onclick=()=>cargarDash(true);
 function setTab(t){$("viewAdmin").dataset.tab=t;$("tabT").setAttribute("aria-selected",t==="t");$("tabD").setAttribute("aria-selected",t==="d");if(t==="d")cargarDash(false);}
 $("tabT").onclick=()=>setTab("t");$("tabD").onclick=()=>setTab("d");
-(function(){const st=document.createElement("style");st.textContent=`.ticket.col .steps,.ticket.col .t-items{display:none}.t-head{cursor:pointer}.t-head::after{content:"▾";color:var(--muted);transition:transform .2s}.ticket.col .t-head::after{transform:rotate(-90deg)}.vbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:10px 0}.vbar .hint{margin:0}.vmore{width:100%;margin-top:10px}`;document.head.appendChild(st);})();
+(function(){const st=document.createElement("style");st.textContent=`.ticket.col .steps,.ticket.col .t-items{display:none}.t-head{cursor:pointer}.t-head::after{content:"▾";color:var(--muted);transition:transform .2s}.ticket.col .t-head::after{transform:rotate(-90deg)}.vbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:10px 0}.vbar .hint{margin:0}.vpag{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:14px;color:var(--muted)}.vpag .btn:disabled{opacity:.4;cursor:default}`;document.head.appendChild(st);})();
 const vKeyFn=()=>fEstado+"|"+$("fTienda").value+"|"+$("fBuscar").value;
-let vCompact=store.get("od_vista")!=="full",vOpen=new Set(),vLim=15,vKey="";
+let vCompact=store.get("od_vista")!=="full",vOpen=new Set(),vPage=0,vKey="";const VPER=5;
 function vApply(){
   const L=$("ticketList"),ts=[...L.querySelectorAll(".ticket")],k=vKeyFn();
-  if(k!==vKey){vKey=k;vLim=15;}
-  ts.forEach((t,i)=>{const n=t.querySelector(".t-num").textContent;t.classList.toggle("col",vCompact&&!vOpen.has(n));t.hidden=i>=vLim;});
-  const old=L.querySelector(".vmore");if(old)old.remove();
-  if(ts.length>vLim)L.insertAdjacentHTML("beforeend",`<button type="button" class="btn ghost vmore">Mostrar más (${ts.length-vLim} restantes)</button>`);
+  if(k!==vKey){vKey=k;vPage=0;}
+  const pages=Math.max(1,Math.ceil(ts.length/VPER));if(vPage>=pages)vPage=pages-1;if(vPage<0)vPage=0;
+  const a=vPage*VPER,b=a+VPER;
+  ts.forEach((t,i)=>{const n=t.querySelector(".t-num").textContent;t.classList.toggle("col",vCompact&&!vOpen.has(n));t.hidden=i<a||i>=b;});
+  const old=L.querySelector(".vpag");if(old)old.remove();
+  if(pages>1)L.insertAdjacentHTML("beforeend",`<div class="vpag"><button type="button" class="btn sm ghost" data-pg="-1"${vPage===0?" disabled":""}>‹ Anterior</button><span>Hoja ${vPage+1} de ${pages}</span><button type="button" class="btn sm ghost" data-pg="1"${vPage>=pages-1?" disabled":""}>Siguiente ›</button></div>`);
   let bar=$("vBar");if(!bar){bar=document.createElement("div");bar.id="vBar";bar.className="vbar";L.parentNode.insertBefore(bar,L);}
-  bar.innerHTML=ts.length?`<span class="hint">${Math.min(vLim,ts.length)} de ${ts.length} pedidos</span><button type="button" class="linkish" id="vTog">${vCompact?"Expandir todo":"Contraer todo"}</button>`:"";
+  bar.innerHTML=ts.length?`<span class="hint">${a+1}–${Math.min(b,ts.length)} de ${ts.length} pedidos</span><button type="button" class="linkish" id="vTog">${vCompact?"Expandir todo":"Contraer todo"}</button>`:"";
 }
 document.addEventListener("click",e=>{
   const h=e.target.closest(".t-head");
   if(h&&h.closest("#ticketList")){const t=h.closest(".ticket"),n=t.querySelector(".t-num").textContent;if(t.classList.toggle("col"))vOpen.delete(n);else vOpen.add(n);return;}
-  if(e.target.closest(".vmore")){vLim+=15;vApply();return;}
+  const pg=e.target.closest("[data-pg]");if(pg){vPage+=+pg.dataset.pg;vApply();const L=$("ticketList");(($("vBar")||L).scrollIntoView({behavior:"smooth",block:"start"}));return;}
   if(e.target.id==="vTog"){vCompact=!vCompact;vOpen.clear();store.set("od_vista",vCompact?"compact":"full");vApply();}
 });
 const _rl=renderList;renderList=function(){_rl();vApply();};
