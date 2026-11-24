@@ -144,6 +144,7 @@ textarea{min-height:64px;resize:vertical}
 .t-foot{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 14px;background:var(--sunk);border-top:1px solid var(--line)}
 .t-time{font-size:12px;color:var(--muted);display:grid;gap:2px}
 .t-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.pr-btn{background:#fff;color:var(--accent);border:1.5px solid var(--accent);font-weight:700;font-size:14px;padding:9px 16px;border-radius:999px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
 .dl-btn{background:var(--accent);color:var(--accent-ink);border:0;font-weight:700;font-size:14px;padding:10px 16px;border-radius:999px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}.dl-btn:disabled{opacity:.6}
 .linkish.cancel-btn{color:var(--danger)}.linkish.cancel-btn.armed{font-weight:700;text-decoration:none;background:var(--sunk);border-radius:999px;padding:6px 10px}.linkish{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px}
 .none{padding:30px 10px;text-align:center;color:var(--muted)}
@@ -363,7 +364,7 @@ function ticketHTML(p,actions,showStock){
       return `<div class="t-it"><span class="q">${it.q}×</span>${avatar(it,"sm")}<div><div class="n">${esc(it.n)}</div><div class="code">${esc(it.c)}${it.m?" · "+esc(it.m):""}</div></div>${stk}</div>`;}).join("")}</div>
     <div class="t-foot">
       <div class="t-time"><span>Pedido ${fmt(p.creado)} · ${p.items.length} prod. / ${units} unid.</span>${p.estado!=="pendiente"&&last?`<span>${ESTADOS[p.estado]} ${fmt(last.t)}</span>`:""}</div>
-      <div class="t-actions">${actions?actions(p):""}<button class="dl-btn" type="button" data-dl="${esc(p.num)}">⬇ Descargar Excel</button></div>
+      <div class="t-actions">${actions?actions(p):""}<button class="pr-btn" type="button" data-print="${esc(p.num)}">🖨 Imprimir ticket</button><button class="dl-btn" type="button" data-dl="${esc(p.num)}">⬇ Descargar Excel</button></div>
     </div>
   </article>`;
 }
@@ -383,6 +384,45 @@ async function descargar(num,btn){
   finally{if(btn){btn.disabled=false;btn.textContent=t0;}}
 }
 document.addEventListener("click",e=>{const b=e.target.closest("[data-dl]");if(b)descargar(b.dataset.dl,b);});
+/* Imprimir ticket (formato ticketera 80 mm) mediante iframe oculto */
+function imprimirTicket(num){
+  const p=(typeof pedidos!=="undefined"?pedidos:[]).find(x=>x.num===num);if(!p)return;
+  const units=p.items.reduce((a,b)=>a+(b.q||0),0);
+  const now=new Date().toLocaleString("es-PE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  const rows=p.items.map(i=>`<tr><td class="q">${i.q}</td><td>${esc(i.n)}<div class="c">${esc(i.c)}${i.m?" · "+esc(i.m):""}</div></td></tr>`).join("");
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(p.num)}</title><style>
+@page{size:80mm auto;margin:3mm}*{box-sizing:border-box}
+body{margin:0;width:74mm;font:12px/1.35 "Courier New",monospace;color:#000}
+h1{font-size:18px;text-align:center;margin:0 0 2px;letter-spacing:1px}.ctr{text-align:center}
+.sep{border-top:1px dashed #000;margin:6px 0}.num{font-size:20px;font-weight:700;text-align:center;margin:4px 0}
+.kv{display:flex;justify-content:space-between;gap:6px}.kv b{text-align:right}
+table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;border-bottom:1px solid #000;padding:2px 0}
+td{vertical-align:top;padding:3px 0;border-bottom:1px dotted #999}td.q{width:9mm;font-weight:700;font-size:14px}
+.c{font-size:10px;color:#333}.tot{font-weight:700;font-size:13px}.firma{margin-top:22px;border-top:1px solid #000;text-align:center;font-size:11px;padding-top:2px}
+</style></head><body>
+<h1>OH! DIOSA</h1><div class="ctr">Ticket de pedido</div><div class="sep"></div>
+<div class="num">${esc(p.num)}</div>
+<div class="kv"><span>Tienda:</span><b>${esc(p.tiendaNombre)}</b></div>
+<div class="kv"><span>Vendedora:</span><b>${esc(p.vendedora)}</b></div>
+<div class="kv"><span>Estado:</span><b>${ESTADOS[p.estado]||esc(p.estado)}</b></div>
+<div class="kv"><span>Pedido:</span><b>${fmt(p.creado)}</b></div>
+<div class="sep"></div>
+<table><thead><tr><th>Cant</th><th>Producto</th></tr></thead><tbody>${rows}</tbody></table>
+<div class="sep"></div>
+<div class="kv tot"><span>Productos:</span><span>${p.items.length}</span></div>
+<div class="kv tot"><span>Total unidades:</span><span>${units}</span></div>
+<div class="firma">Recibido por</div>
+<div class="sep"></div><div class="ctr" style="font-size:10px">Impreso ${now}</div>
+</body></html>`;
+  let f=document.getElementById("printFrame");if(f)f.remove();
+  f=document.createElement("iframe");f.id="printFrame";f.setAttribute("aria-hidden","true");
+  f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+  document.body.appendChild(f);
+  const d=f.contentWindow.document;d.open();d.write(html);d.close();
+  setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print();}catch(e){alert("No se pudo abrir la impresión.");}},250);
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-print]");if(b)imprimirTicket(b.dataset.print);});
+
 
 (function(){const st=document.createElement("style");st.textContent=`#edDlg{border:0;border-radius:18px;padding:0;width:min(640px,94vw);max-height:90vh;background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.3)}#edDlg::backdrop{background:rgba(30,15,25,.45)}.edi{padding:18px;display:grid;gap:12px}.edi h3{margin:0;font-size:18px}.edl{display:grid;gap:8px;max-height:36vh;overflow:auto}.edr{display:grid;grid-template-columns:1fr 84px auto;gap:8px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:12px}.edr input{width:84px;padding:8px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;text-align:center}.edr .x{background:none;border:0;color:var(--danger);font-size:18px;cursor:pointer}.edr small,.edres small{color:var(--muted);display:block}.edres{display:grid;gap:4px;max-height:24vh;overflow:auto}.edres button{text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 10px;cursor:pointer;font:inherit;font-size:14px}.edres button:hover{background:var(--accent-soft)}.edf{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap}#edQ{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}`;document.head.appendChild(st);
 const dg=document.createElement("dialog");dg.id="edDlg";dg.innerHTML=`<div class="edi"><h3 id="edT"></h3><div class="edl" id="edL"></div><input id="edQ" type="text" placeholder="Agregar producto: busca por nombre, marca o código" autocomplete="off"><div class="edres" id="edR"></div><span class="err" id="edE" hidden></span><div class="edf"><button type="button" class="btn ghost" id="edC">Cancelar</button><button type="button" class="btn" id="edS">Guardar cambios</button></div></div>`;document.body.appendChild(dg);})();
