@@ -153,6 +153,8 @@ textarea{min-height:64px;resize:vertical}
 .stack{display:grid;gap:22px}.stack-sm{display:grid;gap:8px}.row{display:flex;gap:8px;flex-wrap:wrap}
 .tabnote{padding:10px 0;font-weight:600;color:var(--ink);border-bottom:3px solid var(--accent)}
 #viewAdmin[data-tab=d]>:not(#dashBox){display:none}#viewAdmin:not([data-tab=d])>#dashBox{display:none}
+#viewAdmin[data-tab=s]>:not(#stockBox){display:none}#viewAdmin:not([data-tab=s])>#stockBox{display:none}
+.stbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px}.stbl table{width:100%;border-collapse:collapse;font-size:14px}.stbl th{position:sticky;top:0;background:var(--sunk);text-align:left;font-size:12px;color:var(--muted);padding:9px 10px;white-space:nowrap}.stbl td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:middle}.stbl th:nth-child(n+2):not(:last-child){text-align:right}.stbl td small{display:block;color:var(--muted);font-size:12px}.stbl td.nm{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.stbl td.sg{font-weight:700;color:var(--accent)}.stbl tr.falta td:first-child{box-shadow:inset 4px 0 0 var(--accent)}.stbl tr.sin td:nth-child(2){color:var(--accent);font-weight:700}.stbl input{width:84px;padding:7px 9px;border:1.5px solid var(--line);border-radius:10px;font:inherit;text-align:right;background:var(--surface);color:var(--ink)}.slista{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--accent-soft);border-radius:14px;padding:10px 14px;margin:14px 0}.slista .row{align-items:center}
 .dwrap{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;margin:16px 0;box-shadow:var(--shadow)}
 .dctl{display:grid;gap:10px;margin-bottom:14px}
 .dchips,.drow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -261,7 +263,7 @@ input[type=text]{padding-left:18px}
       <span class="sub">Aprobación de pedidos</span>
       <span class="conn"><span class="dot" id="connDot"></span><span id="connTxt">—</span></span>
     </div>
-    <nav class="tabs"><button id="tabT" type="button" aria-selected="true" hidden>Tickets</button><button id="tabD" type="button" aria-selected="false" hidden>Dashboard</button><button class="linkish" id="salir" hidden style="margin-left:auto">Cerrar sesión</button></nav>
+    <nav class="tabs"><button id="tabT" type="button" aria-selected="true" hidden>Tickets</button><button id="tabD" type="button" aria-selected="false" hidden>Dashboard</button><button id="tabS" type="button" aria-selected="false" hidden>Stock</button><button class="linkish" id="salir" hidden style="margin-left:auto">Cerrar sesión</button></nav>
   </header>
 
   <section class="view" id="viewLogin">
@@ -284,6 +286,7 @@ input[type=text]{padding-left:18px}
     </div>
     <span class="err" id="actErr" hidden></span>
 <div class="dwrap" id="dashBox"><div class="dctl"><div class="dchips" id="dChips"><button type="button" data-pre="hoy">Hoy</button><button type="button" data-pre="ayer">Ayer</button><button type="button" data-pre="sem">Esta semana</button><button type="button" data-pre="7">7 días</button><button type="button" data-pre="30">30 días</button><button type="button" data-pre="mes">Este mes</button><button type="button" data-pre="mesant">Mes pasado</button><button type="button" data-pre="90">90 días</button><button type="button" data-pre="todo">Todo</button></div><div class="drow"><label>Desde <input type="date" id="dDesde"></label><label>Hasta <input type="date" id="dHasta"></label><select id="dTienda" aria-label="Tienda"><option value="">Todas las tiendas</option></select><select id="dVend" aria-label="Vendedora"><option value="">Todas las vendedoras</option></select><div class="dseg" id="dSeg"><button type="button" data-met="n">Pedidos</button><button type="button" data-met="u">Unidades</button></div><button type="button" class="btn sm ghost" id="dRef">Actualizar</button></div></div><div id="dOut"></div></div>
+<div class="dwrap" id="stockBox"><div class="dctl"><div class="dchips" id="sChips"><button type="button" data-sf="dem">Pedidos por tiendas</button><button type="button" data-sf="falta">Faltantes</button><button type="button" data-sf="sin">Sin stock</button><button type="button" data-sf="bajo">Stock bajo (≤5)</button><button type="button" data-sf="lista">Mi lista</button><button type="button" data-sf="todo">Todos</button></div><div class="drow"><span class="hint" style="margin:0">Demanda de:</span><div class="dseg" id="sDias"><button type="button" data-sd="7">7 días</button><button type="button" data-sd="15">15 días</button><button type="button" data-sd="30">30 días</button><button type="button" data-sd="60">60 días</button><button type="button" data-sd="90">90 días</button></div><button type="button" class="btn sm ghost" id="sRef">Actualizar</button></div><div class="drow"><input type="search" id="sQ" placeholder="Buscar producto, marca o código" aria-label="Buscar producto" style="flex:1 1 220px;width:auto"><select id="sMarca" aria-label="Marca" style="flex:0 1 200px;width:auto"><option value="">Todas las marcas</option></select><select id="sSort" aria-label="Ordenar" style="flex:0 1 190px;width:auto"><option value="sug">Ordenar: sugerido</option><option value="dem">Ordenar: más pedidos</option><option value="stock">Ordenar: menor stock</option><option value="nom">Ordenar: nombre</option></select><button type="button" class="btn sm" id="sSug">+ Agregar sugeridos a la lista</button></div><span class="hint" id="sMsg" style="margin:0"></span></div><div class="kpis dk" id="sKpis"></div><div class="slista" id="sLista"></div><div id="sOut"><div class="none">Cargando…</div></div></div>
     <div class="tickets" id="ticketList"></div>
     <div class="login" id="userBox" style="margin-top:28px;max-width:none">
       <details id="userDet"><summary class="label" style="cursor:pointer">Usuarios (vendedoras)</summary>
@@ -447,7 +450,7 @@ const ACCION={pendiente:"Aprobar · En camino",en_camino:"Confirmar entregado"};
 let pin=store.get("od_pin")||"", pedidos=[], fEstado="pendiente", cargado=false;
 $("fTienda").innerHTML+=TIENDAS.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join("");
 
-function entrarUI(on){$("viewLogin").hidden=on;$("viewAdmin").hidden=!on;$("salir").hidden=!on;$("tabT").hidden=$("tabD").hidden=!on;if(!on)setTab("t");if(on){cargar();cargarUsuarios();}}
+function entrarUI(on){$("viewLogin").hidden=on;$("viewAdmin").hidden=!on;$("salir").hidden=!on;$("tabT").hidden=$("tabD").hidden=$("tabS").hidden=!on;if(!on)setTab("t");if(on){cargar();cargarUsuarios();}}
 $("loginForm").addEventListener("submit",async e=>{
   e.preventDefault();$("loginErr").hidden=true;const v=$("pin").value.trim();if(!v)return;
   $("entrar").disabled=true;$("entrar").textContent="Verificando…";
@@ -579,7 +582,8 @@ $("dashBox").addEventListener("change",e=>{const t=e.target;
   else if(t.id==="dTienda")D.tienda=t.value;else if(t.id==="dVend")D.vend=t.value;else return;
   renderDash();});
 $("dRef").onclick=()=>cargarDash(true);
-function setTab(t){$("viewAdmin").dataset.tab=t;$("tabT").setAttribute("aria-selected",t==="t");$("tabD").setAttribute("aria-selected",t==="d");if(t==="d")cargarDash(false);}
+function setTab(t){$("viewAdmin").dataset.tab=t;$("tabT").setAttribute("aria-selected",t==="t");$("tabD").setAttribute("aria-selected",t==="d");$("tabS").setAttribute("aria-selected",t==="s");if(t==="d")cargarDash(false);if(t==="s")cargarStock(false);}
+$("tabS").onclick=()=>setTab("s");
 $("tabT").onclick=()=>setTab("t");$("tabD").onclick=()=>setTab("d");
 (function(){const st=document.createElement("style");st.textContent=`.ticket.col .steps,.ticket.col .t-items{display:none}.t-head{cursor:pointer}.t-head::after{content:"▾";color:var(--muted);transition:transform .2s}.ticket.col .t-head::after{transform:rotate(-90deg)}.vbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:10px 0}.vbar .hint{margin:0}.vpag{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:14px;color:var(--muted)}.vpag .btn:disabled{opacity:.4;cursor:default}`;document.head.appendChild(st);})();
 const vKeyFn=()=>fEstado+"|"+$("fTienda").value+"|"+$("fBuscar").value;
@@ -675,6 +679,105 @@ $("baseFile").onchange=async e=>{
   }catch(err){msg.textContent="Error: "+err.message;}
   e.target.value="";
 };
+/* ---- Stock y pedido a gerencia ---- */
+const SK={dias:30,f:"dem",q:"",marca:"",sort:"sug",pg:0},SPER=20;
+let sLista=(()=>{try{return new Map(JSON.parse(store.get("od_lista")||"[]"))}catch(e){return new Map()}})();
+const sSave=()=>store.set("od_lista",JSON.stringify([...sLista]));
+let sData=null,sErr="",sTries=0;
+async function cargarStock(force){
+  if(!force&&dped&&Date.now()-dAt<60000){calcStock();return;}
+  if(!dped){sErr="";$("sOut").innerHTML='<div class="none">Cargando pedidos…</div>';}
+  const b=$("sRef");b.disabled=true;b.textContent="Actualizando…";
+  try{const j=await apiGet({action:"listar",limite:3000});dped=j.pedidos||[];dAt=Date.now();sErr="";if(!D.desde)setPre("7");}
+  catch(e){if(!dped)sErr="No se pudieron cargar los pedidos. Revisa tu conexión e intenta de nuevo.";}
+  b.disabled=false;b.textContent="Actualizar";calcStock();
+}
+function calcStock(){
+  if(sErr){$("sOut").innerHTML=`<div class="none">${esc(sErr)}</div>`;return;}
+  if(!catalog.length){$("sOut").innerHTML='<div class="none">Cargando base de productos…</div>';if(sTries++<40)setTimeout(calcStock,800);return;}
+  if(!dped)return;
+  const from=Date.now()-SK.dias*864e5,dem=new Map(),pen=new Map();
+  dped.forEach(p=>{if(p.estado==="cancelado")return;(p.items||[]).forEach(it=>{const k=it.c+"|"+it.n,q=+it.q||0;
+    if(p.estado==="pendiente")pen.set(k,(pen.get(k)||0)+q);if(p.creado>=from)dem.set(k,(dem.get(k)||0)+q);});});
+  sData=catalog.map(c=>{const k=c.c+"|"+c.n,d=dem.get(k)||0,pa=pen.get(k)||0,s=+c.s||0;
+    return{k,c:c.c,n:c.n,m:c.m||"",s,d,pa,falta:Math.max(0,pa-s),sug:Math.max(0,Math.max(d,pa)-s),t:norm(c.n+" "+(c.m||"")+" "+c.c)};});
+  const ms=[...new Set(sData.map(x=>x.m).filter(Boolean))].sort();
+  $("sMarca").innerHTML='<option value="">Todas las marcas</option>'+ms.map(m=>`<option${m===SK.marca?" selected":""}>${esc(m)}</option>`).join("");
+  renderStock();
+}
+const sFil=()=>{const tk=norm(SK.q).split(/\s+/).filter(Boolean);
+  const L=sData.filter(x=>(SK.f==="todo"||(SK.f==="dem"&&(x.d>0||x.pa>0))||(SK.f==="falta"&&x.falta>0)||(SK.f==="sin"&&x.s<=0)||(SK.f==="bajo"&&x.s>0&&x.s<=5)||(SK.f==="lista"&&sLista.has(x.k)))
+    &&(!SK.marca||x.m===SK.marca)&&tk.every(w=>x.t.includes(w)));
+  const by={sug:(a,b)=>b.sug-a.sug||b.d-a.d||a.n.localeCompare(b.n),dem:(a,b)=>b.d-a.d||b.sug-a.sug,stock:(a,b)=>a.s-b.s||b.d-a.d,nom:(a,b)=>a.n.localeCompare(b.n)}[SK.sort];
+  return L.sort(by);};
+function sResumen(){
+  let u=0;sLista.forEach(q=>u+=q);
+  $("sLista").innerHTML=`<span><b>Pedido a gerencia:</b> ${sLista.size} prod. · ${u} unid.</span><span class="row"><button type="button" class="btn sm ghost" id="sVer"${sLista.size?"":" disabled"}>Ver lista</button><button type="button" class="pr-btn" id="sPrint"${sLista.size?"":" disabled"}>🖨 Imprimir</button><button type="button" class="dl-btn" id="sXls"${sLista.size?"":" disabled"}>⬇ Excel</button><button type="button" class="linkish cancel-btn" id="sVac"${sLista.size?"":" hidden"}>Vaciar</button></span>`;
+}
+function renderStock(){
+  if(!sData)return;
+  $("sChips").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.sf===SK.f));
+  $("sDias").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.sd===SK.dias));
+  const dm=sData.filter(x=>x.d>0||x.pa>0),fl=sData.filter(x=>x.falta>0);
+  const kp=(l,v,st)=>`<div class="kpi"><span class="kv"${st?` style="${st}"`:""}>${v}</span><span class="kl">${l}</span></div>`;
+  $("sKpis").innerHTML=kp(`Productos pedidos (${SK.dias} días)`,dm.length)+kp("Con faltante para atender",fl.length,fl.length?"color:var(--accent)":"")
+    +kp("Unidades faltantes",fl.reduce((a,x)=>a+x.falta,0),fl.length?"color:var(--accent)":"")+kp("Sugerido a pedir (unid.)",sData.reduce((a,x)=>a+x.sug,0));
+  sResumen();
+  const L=sFil(),pages=Math.max(1,Math.ceil(L.length/SPER));if(SK.pg>=pages)SK.pg=pages-1;
+  const a=SK.pg*SPER,P=L.slice(a,a+SPER);
+  $("sOut").innerHTML=!L.length?`<div class="none">${SK.f==="lista"?"Tu lista está vacía. Escribe cantidades en “A pedir”.":"No hay productos con estos filtros."}</div>`
+   :`<div class="hint" style="margin:0 0 8px">${a+1}–${Math.min(a+SPER,L.length)} de ${L.length} productos</div><div class="stbl"><table><thead><tr><th>Producto</th><th title="Stock en almacén según la base subida">Stock</th><th title="Unidades en pedidos pendientes">Por atender</th><th title="Unidades pedidas por las tiendas en el periodo">Demanda</th><th>Sugerido</th><th>A pedir</th></tr></thead><tbody>${P.map(x=>`<tr class="${x.falta>0?"falta":x.s<=0?"sin":""}"><td><b>${esc(x.n)}</b><small>${esc(x.c)}${x.m?" · "+esc(x.m):""}</small></td><td class="nm">${x.s}</td><td class="nm">${x.pa||"—"}</td><td class="nm">${x.d||"—"}</td><td class="nm sg">${x.sug||"—"}</td><td><input type="number" min="0" max="99999" inputmode="numeric" data-sk="${esc(x.k)}" value="${sLista.get(x.k)||""}" placeholder="${x.sug||0}" aria-label="Cantidad a pedir de ${esc(x.n)}"></td></tr>`).join("")}</tbody></table></div>`
+     +(pages>1?`<div class="vpag"><button type="button" class="btn sm ghost" data-spg="-1"${SK.pg===0?" disabled":""}>‹ Anterior</button><span>Hoja ${SK.pg+1} de ${pages}</span><button type="button" class="btn sm ghost" data-spg="1"${SK.pg>=pages-1?" disabled":""}>Siguiente ›</button></div>`:"");
+}
+function sItems(){return[...sLista].map(([k,q])=>{const x=(sData||[]).find(y=>y.k===k),i=k.indexOf("|");return x?{...x,q}:{c:k.slice(0,i),n:k.slice(i+1),m:"",s:"",pa:"",d:"",q};}).sort((a,b)=>a.n.localeCompare(b.n));}
+async function sExcel(btn){
+  const t0=btn.textContent;btn.disabled=true;btn.textContent="Preparando…";
+  try{await loadXLSX();const it=sItems(),u=it.reduce((a,x)=>a+x.q,0);
+    const rows=[["Pedido a gerencia — Oh! Diosa"],["Fecha",new Date().toLocaleString("es-PE")],["Demanda considerada",`Últimos ${SK.dias} días`],[],["Código","Producto","Marca","Stock almacén","Por atender","Demanda","Cantidad a pedir"]]
+      .concat(it.map(x=>[String(x.c),x.n,x.m,x.s,x.pa,x.d,x.q]),[[],["","","","","","Total unidades",u]]);
+    const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=[{wch:16},{wch:48},{wch:16},{wch:12},{wch:12},{wch:10},{wch:14}];
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Pedido");
+    XLSX.writeFile(wb,"Pedido_gerencia_"+ymd(new Date())+".xlsx");
+  }catch(e){alert("No se pudo generar el archivo. Revisa tu internet e intenta de nuevo.");}
+  finally{btn.disabled=false;btn.textContent=t0;}
+}
+function sImprimir(){
+  const it=sItems(),u=it.reduce((a,x)=>a+x.q,0),now=new Date().toLocaleString("es-PE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedido a gerencia</title><style>
+@page{size:A4;margin:14mm}body{font:12px/1.4 Arial,sans-serif;color:#000;margin:0}h1{font-size:18px;margin:0}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse}th,td{border:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}th{background:#eee;font-size:11px}
+td.n{text-align:right;white-space:nowrap}td.q{text-align:right;font-weight:700;font-size:13px}tfoot td{font-weight:700}
+.f{display:flex;gap:40px;margin-top:50px}.f div{flex:1;border-top:1px solid #000;text-align:center;padding-top:3px}
+</style></head><body><div class="hd"><div><h1>OH! DIOSA — Pedido a gerencia</h1><div>Demanda considerada: últimos ${SK.dias} días</div></div><div>${now}</div></div>
+<table><thead><tr><th>#</th><th>Código</th><th>Producto</th><th>Marca</th><th>Stock</th><th>Por atender</th><th>Demanda</th><th>A pedir</th></tr></thead><tbody>
+${it.map((x,i)=>`<tr><td class="n">${i+1}</td><td>${esc(x.c)}</td><td>${esc(x.n)}</td><td>${esc(x.m)}</td><td class="n">${x.s}</td><td class="n">${x.pa||"—"}</td><td class="n">${x.d||"—"}</td><td class="q">${x.q}</td></tr>`).join("")}
+</tbody><tfoot><tr><td colspan="7" style="text-align:right">Total: ${it.length} productos</td><td class="q">${u}</td></tr></tfoot></table>
+<div class="f"><div>Solicitado por</div><div>Aprobado por (Gerencia)</div></div></body></html>`;
+  let f=document.getElementById("printFrame");if(f)f.remove();
+  f=document.createElement("iframe");f.id="printFrame";f.setAttribute("aria-hidden","true");
+  f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+  document.body.appendChild(f);const d=f.contentWindow.document;d.open();d.write(html);d.close();
+  setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print();}catch(e){alert("No se pudo abrir la impresión.");}},250);
+}
+$("stockBox").addEventListener("click",e=>{
+  const c=e.target.closest("[data-sf],[data-sd],[data-spg],#sRef,#sSug,#sVer,#sPrint,#sXls,#sVac");if(!c)return;
+  if(c.dataset.sf){SK.f=c.dataset.sf;SK.pg=0;renderStock();}
+  else if(c.dataset.sd){SK.dias=+c.dataset.sd;SK.pg=0;calcStock();}
+  else if(c.dataset.spg){SK.pg+=+c.dataset.spg;renderStock();$("stockBox").scrollIntoView({behavior:"smooth",block:"start"});}
+  else if(c.id==="sRef")cargarStock(true);
+  else if(c.id==="sSug"){const L=sFil().filter(x=>x.sug>0);L.forEach(x=>{if(!sLista.has(x.k))sLista.set(x.k,x.sug);});sSave();renderStock();$("sMsg").textContent=L.length?`Se agregaron ${L.length} productos con su cantidad sugerida.`:"No hay sugeridos en este filtro.";}
+  else if(c.id==="sVer"){SK.f="lista";SK.pg=0;renderStock();}
+  else if(c.id==="sPrint")sImprimir();
+  else if(c.id==="sXls")sExcel(c);
+  else if(c.id==="sVac"){if(!c.classList.contains("armed")){c.classList.add("armed");c.textContent="¿Seguro? Toca otra vez";setTimeout(()=>{c.classList.remove("armed");c.textContent="Vaciar";},4000);return;}
+    sLista.clear();sSave();renderStock();}
+});
+$("stockBox").addEventListener("input",e=>{const t=e.target;
+  if(t.dataset.sk){const q=parseInt(t.value,10);if(q>0)sLista.set(t.dataset.sk,q);else sLista.delete(t.dataset.sk);sSave();sResumen();return;}
+  if(t.id==="sQ"){SK.q=t.value;SK.pg=0;clearTimeout(t._t);t._t=setTimeout(renderStock,200);}
+});
+$("stockBox").addEventListener("change",e=>{const t=e.target;if(t.id==="sMarca"){SK.marca=t.value;SK.pg=0;renderStock();}else if(t.id==="sSort"){SK.sort=t.value;SK.pg=0;renderStock();}});
 </script>
 
 </body></html>
