@@ -700,7 +700,7 @@ function calcStock(){
   dped.forEach(p=>{if(p.estado==="cancelado")return;(p.items||[]).forEach(it=>{const k=it.c+"|"+it.n,q=+it.q||0;
     if(p.estado==="pendiente")pen.set(k,(pen.get(k)||0)+q);if(p.creado>=from)dem.set(k,(dem.get(k)||0)+q);});});
   sData=catalog.map(c=>{const k=c.c+"|"+c.n,d=dem.get(k)||0,pa=pen.get(k)||0,s=+c.s||0;
-    return{k,c:c.c,n:c.n,m:c.m||"",s,d,pa,falta:Math.max(0,pa-s),sug:Math.max(0,Math.max(d,pa)-s),t:norm(c.n+" "+(c.m||"")+" "+c.c)};});
+    return{k,c:c.c,n:c.n,m:c.m||"",s,d,pa,falta:Math.max(0,pa-Math.max(s,0)),sug:Math.max(0,Math.max(d,pa)-Math.max(s,0)),t:norm(c.n+" "+(c.m||"")+" "+c.c)};});
   const ms=[...new Set(sData.map(x=>x.m).filter(Boolean))].sort();
   $("sMarca").innerHTML='<option value="">Todas las marcas</option>'+ms.map(m=>`<option${m===SK.marca?" selected":""}>${esc(m)}</option>`).join("");
   renderStock();
