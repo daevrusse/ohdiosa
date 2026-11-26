@@ -671,9 +671,14 @@ $("baseFile").onchange=async e=>{
     const S=400,total=Math.ceil(rows.length/S);
     for(let i=0;i<total;i++){
       msg.textContent="Subiendo "+(i+1)+" de "+total+"…";
-      const j=await apiPost({action:"catalogo_subir",pin,parte:i,total,n:rows.length,filas:rows.slice(i*S,(i+1)*S)});
-      if(!j.ok)throw new Error(j.error||"Error del servidor");
+      let j=null,er=null;
+      for(let t=0;t<4&&!(j&&j.ok);t++){if(t){msg.textContent="Reintentando parte "+(i+1)+" de "+total+"…";await new Promise(r=>setTimeout(r,2500*t));}
+        try{j=await apiPost({action:"catalogo_subir",pin,parte:i,total,n:rows.length,filas:rows.slice(i*S,(i+1)*S)});}catch(x){er=x;j=null;}}
+      if(!j||!j.ok)throw new Error("Se cortó en la parte "+(i+1)+" de "+total+" ("+((j&&j.error)||(er&&er.message)||"sin respuesta")+"). Vuelve a subir el archivo.");
     }
+    msg.textContent="Verificando…";
+    let nv=0;try{nv=(await apiGet({action:"catalogo"})).n||0;}catch(x){}
+    if(nv&&nv!==rows.length)throw new Error("El servidor guardó "+nv+" de "+rows.length+" productos. Vuelve a subir el archivo.");
     msg.textContent="Listo: "+rows.length+" productos publicados.";
     $("baseInfo").textContent="Base actual: "+rows.length+" productos · actualizada ahora";
   }catch(err){msg.textContent="Error: "+err.message;}
