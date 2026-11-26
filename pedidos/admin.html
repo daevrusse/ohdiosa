@@ -265,7 +265,7 @@ input[type=text]{padding-left:18px}
 #stockBox .line{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}#stockBox .line .av{width:44px;height:44px}
 #stockBox .rm{width:auto;height:38px;padding:0 10px;display:flex;gap:6px;align-items:center;font:600 13px var(--body)}
 #stockBox .sk-acts{margin-top:12px;justify-content:flex-end}#stockBox .sk-acts:empty{display:none}
-#stockBox .qty input{width:52px;height:34px;background:#fff;color:var(--ink);border:0;border-radius:0;text-align:center;padding:6px 2px;font:700 15px var(--body);font-variant-numeric:tabular-nums}
+#stockBox .sk-stk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:600}#stockBox .sk-stk input{width:72px;height:38px;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;text-align:center;padding:6px 4px;font:700 15px var(--body);font-variant-numeric:tabular-nums}#stockBox .sk-stk input:focus{border-color:var(--accent)}#stockBox .sk-stk input.ed{border-color:var(--accent);background:#FFF5F8}
 </style>
 <style>html{color-scheme:light}body{margin:0;padding-top:env(safe-area-inset-top,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
 </head><body>
@@ -698,8 +698,8 @@ $("baseFile").onchange=async e=>{
   e.target.value="";
 };
 /* ---- Stock y pedido a gerencia ---- */
-let sLista=(()=>{try{return new Map(JSON.parse(store.get("od_lista2")||"[]"))}catch(e){return new Map()}})();
-const sSave=()=>store.set("od_lista2",JSON.stringify([...sLista]));
+let sLista=(()=>{try{const v=store.get("od_lista3");if(v)return new Map(JSON.parse(v));return new Map(JSON.parse(store.get("od_lista2")||"[]").map(([k])=>[k,null]));}catch(e){return new Map()}})();
+const sSave=()=>store.set("od_lista3",JSON.stringify([...sLista]));
 let sRes=[],sShown=24,sTries=0,sT;
 const sStock=v=>v<=0?`<span class="stkb zero">Stock 0</span>`:v<=5?`<span class="stkb low">Stock ${v}</span>`:`<span class="stkb">Stock ${v}</span>`;
 function cargarStock(){
@@ -717,33 +717,33 @@ function sBuscar(){
     out.push([sc,it.p]);}
   out.sort((a,b)=>b[0]-a[0]);sRes=out.slice(0,sShown).map(x=>x[1]);
   if(!sRes.length){box.innerHTML=`<div class="sk-empty">Sin resultados para “${esc(raw)}”. Prueba con otra palabra, la marca o el código.</div>`;return;}
-  box.innerHTML=sRes.map((p,i)=>{const n=sLista.get(p.c+"|"+p.n);
-    return `<button type="button" class="sk-card${n?" inlist":""}" data-si="${i}">${avatar(p)}<span class="body"><span class="n">${esc(p.n)}</span><span class="meta">${p.m?`<span>${esc(p.m)}</span>`:""}${sStock(+p.s||0)}</span></span><span class="sk-add">${n?"✓ "+n:"+"}</span></button>`;}).join("")
+  box.innerHTML=sRes.map((p,i)=>{const n=sLista.has(p.c+"|"+p.n);
+    return `<button type="button" class="sk-card${n?" inlist":""}" data-si="${i}">${avatar(p)}<span class="body"><span class="n">${esc(p.n)}</span><span class="meta">${p.m?`<span>${esc(p.m)}</span>`:""}${sStock(+p.s||0)}</span></span><span class="sk-add">${n?"✓":"+"}</span></button>`;}).join("")
     +(out.length>sRes.length?`<button type="button" class="btn sm ghost sk-more" id="sMas">Ver más (${out.length-sRes.length} restantes)</button>`:"");
 }
-function sItems(){return[...sLista].map(([k,q])=>{const p=byKey.get(k),i=k.indexOf("|");return p?{k,c:p.c,n:p.n,m:p.m||"",s:+p.s||0,q}:{k,c:k.slice(0,i),n:k.slice(i+1),m:"",s:"",q};});}
+function sItems(){return[...sLista].map(([k,v])=>{const p=byKey.get(k),i=k.indexOf("|"),base=p?+p.s||0:"",s=v==null?base:v;return{k,c:p?p.c:k.slice(0,i),n:p?p.n:k.slice(i+1),m:p?p.m||"":"",base,s,ed:v!=null&&v!==base};});}
 function sCart(){
-  const el=$("sCart"),it=sItems(),u=it.reduce((a,x)=>a+x.q,0);
+  const el=$("sCart"),it=sItems();
   el.innerHTML=!it.length?`<div class="cart-head"><strong>Pedido a gerencia</strong><span>vacío</span></div><div class="cart-empty">Busca un producto arriba y tócalo para agregarlo.</div>`
-   :`<div class="cart-head"><strong>Pedido a gerencia</strong><span>${it.length} producto${it.length>1?"s":""} · ${u} unid.</span></div>`+it.map(x=>`<div class="line">${avatar(x)}<div><div class="n">${esc(x.n)}</div><div class="code">${esc(x.c)}${x.m?" · "+esc(x.m):""}</div><div class="stkl">Stock: ${x.s===""?"—":x.s}</div></div>
-      <div class="ctrl"><div class="qty"><button type="button" data-smenos="${esc(x.k)}" aria-label="Menos">−</button><input inputmode="numeric" value="${x.q}" data-sq="${esc(x.k)}" aria-label="Cantidad de ${esc(x.n)}"><button type="button" data-smas="${esc(x.k)}" aria-label="Más">+</button></div>
+   :`<div class="cart-head"><strong>Pedido a gerencia</strong><span>${it.length} producto${it.length>1?"s":""}</span></div>`+it.map(x=>`<div class="line">${avatar(x)}<div><div class="n">${esc(x.n)}</div><div class="code">${esc(x.c)}${x.m?" · "+esc(x.m):""}</div>${x.ed?`<div class="stkl low">En sistema: ${x.base}</div>`:""}</div>
+      <div class="ctrl"><label class="sk-stk"><span>Stock</span><input inputmode="numeric" value="${x.s}" data-sq="${esc(x.k)}" aria-label="Stock de ${esc(x.n)}"${x.ed?' class="ed"':""}></label>
       <button type="button" class="rm" data-srm="${esc(x.k)}" aria-label="Quitar ${esc(x.n)}" title="Quitar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg><span>Quitar</span></button></div></div>`).join("");
   $("sLista").innerHTML=it.length?`<span class="row"><button type="button" class="pr-btn" id="sPrint">🖨 Imprimir</button><button type="button" class="dl-btn" id="sXls">⬇ Excel</button><button type="button" class="linkish cancel-btn" id="sVac">Vaciar</button></span>`:"";
 }
 const sUpd=()=>{sSave();sCart();sBuscar();};
 async function sExcel(btn){
   const t0=btn.textContent;btn.disabled=true;btn.textContent="Preparando…";
-  try{await loadXLSX();const it=sItems(),u=it.reduce((a,x)=>a+x.q,0);
-    const rows=[["Pedido a gerencia — Oh! Diosa"],["Fecha",new Date().toLocaleString("es-PE")],[],["Código","Producto","Marca","Stock","Cantidad a pedir"]]
-      .concat(it.map(x=>[String(x.c),x.n,x.m,x.s,x.q]),[[],["","","","Total unidades",u]]);
-    const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=[{wch:16},{wch:48},{wch:16},{wch:10},{wch:16}];
+  try{await loadXLSX();const it=sItems();
+    const rows=[["Pedido a gerencia — Oh! Diosa"],["Fecha",new Date().toLocaleString("es-PE")],[],["Código","Producto","Marca","Stock"]]
+      .concat(it.map(x=>[String(x.c),x.n,x.m,x.s]),[[],["","","Total productos",it.length]]);
+    const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=[{wch:16},{wch:48},{wch:16},{wch:10}];
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Pedido");
     XLSX.writeFile(wb,"Pedido_gerencia_"+ymd(new Date())+".xlsx");
   }catch(e){alert("No se pudo generar el archivo. Revisa tu internet e intenta de nuevo.");}
   finally{btn.disabled=false;btn.textContent=t0;}
 }
 function sImprimir(){
-  const it=sItems(),u=it.reduce((a,x)=>a+x.q,0),now=new Date().toLocaleString("es-PE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  const it=sItems(),now=new Date().toLocaleString("es-PE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
   const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedido a gerencia</title><style>
 @page{size:A4;margin:14mm}body{font:12px/1.4 Arial,sans-serif;color:#000;margin:0}h1{font-size:18px;margin:0}
 .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}
@@ -751,9 +751,9 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #999;padding:4p
 td.n{text-align:right;white-space:nowrap}td.q{text-align:right;font-weight:700;font-size:13px}tfoot td{font-weight:700}
 .f{display:flex;gap:40px;margin-top:50px}.f div{flex:1;border-top:1px solid #000;text-align:center;padding-top:3px}
 </style></head><body><div class="hd"><div><h1>OH! DIOSA — Pedido a gerencia</h1></div><div>${now}</div></div>
-<table><thead><tr><th>#</th><th>Código</th><th>Producto</th><th>Marca</th><th>Stock</th><th>A pedir</th></tr></thead><tbody>
-${it.map((x,i)=>`<tr><td class="n">${i+1}</td><td>${esc(x.c)}</td><td>${esc(x.n)}</td><td>${esc(x.m)}</td><td class="n">${x.s}</td><td class="q">${x.q}</td></tr>`).join("")}
-</tbody><tfoot><tr><td colspan="5" style="text-align:right">Total: ${it.length} productos</td><td class="q">${u}</td></tr></tfoot></table>
+<table><thead><tr><th>#</th><th>Código</th><th>Producto</th><th>Marca</th><th>Stock</th></tr></thead><tbody>
+${it.map((x,i)=>`<tr><td class="n">${i+1}</td><td>${esc(x.c)}</td><td>${esc(x.n)}</td><td>${esc(x.m)}</td><td class="q">${x.s}</td></tr>`).join("")}
+</tbody><tfoot><tr><td colspan="4" style="text-align:right">Total productos</td><td class="q">${it.length}</td></tr></tfoot></table>
 <div class="f"><div>Solicitado por</div><div>Aprobado por (Gerencia)</div></div></body></html>`;
   let f=document.getElementById("printFrame");if(f)f.remove();
   f=document.createElement("iframe");f.id="printFrame";f.setAttribute("aria-hidden","true");
@@ -762,20 +762,18 @@ ${it.map((x,i)=>`<tr><td class="n">${i+1}</td><td>${esc(x.c)}</td><td>${esc(x.n)
   setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print();}catch(e){alert("No se pudo abrir la impresión.");}},250);
 }
 $("sQ").addEventListener("input",()=>{sShown=24;clearTimeout(sT);sT=setTimeout(sBuscar,90);});
-$("sQ").addEventListener("keydown",e=>{if(e.key==="Enter"&&sRes.length){e.preventDefault();const p=sRes[0],k=p.c+"|"+p.n;sLista.set(k,(sLista.get(k)||0)+1);sUpd();}else if(e.key==="Escape"){e.target.value="";sBuscar();}});
+$("sQ").addEventListener("keydown",e=>{if(e.key==="Enter"&&sRes.length){e.preventDefault();const p=sRes[0],k=p.c+"|"+p.n;if(!sLista.has(k))sLista.set(k,null);sUpd();}else if(e.key==="Escape"){e.target.value="";sBuscar();}});
 $("stockBox").addEventListener("click",e=>{
   const c=e.target.closest("[data-si],#sMas,[data-smenos],[data-smas],[data-srm],#sPrint,#sXls,#sVac");if(!c)return;const d=c.dataset;
-  if(d.si!=null){const p=sRes[+d.si];if(!p)return;const k=p.c+"|"+p.n;sLista.set(k,(sLista.get(k)||0)+1);sUpd();}
+  if(d.si!=null){const p=sRes[+d.si];if(!p)return;const k=p.c+"|"+p.n;if(!sLista.has(k))sLista.set(k,null);sUpd();}
   else if(c.id==="sMas"){sShown+=24;sBuscar();}
-  else if(d.smenos!=null){const q=sLista.get(d.smenos)||1;if(q>1){sLista.set(d.smenos,q-1);sUpd();}}
-  else if(d.smas!=null){sLista.set(d.smas,(sLista.get(d.smas)||0)+1);sUpd();}
   else if(d.srm!=null){sLista.delete(d.srm);sUpd();}
   else if(c.id==="sPrint")sImprimir();
   else if(c.id==="sXls")sExcel(c);
   else if(c.id==="sVac"){if(!c.classList.contains("armed")){c.classList.add("armed");c.textContent="¿Seguro? Toca otra vez";setTimeout(()=>{c.classList.remove("armed");c.textContent="Vaciar";},4000);return;}
     sLista.clear();sUpd();}
 });
-$("stockBox").addEventListener("change",e=>{const t=e.target;if(t.dataset.sq!=null){const v=parseInt(t.value,10);sLista.set(t.dataset.sq,v>0?v:1);sUpd();}});
+$("stockBox").addEventListener("change",e=>{const t=e.target;if(t.dataset.sq!=null){const v=parseInt(t.value,10);sLista.set(t.dataset.sq,isNaN(v)?null:v);sUpd();}});
 </script>
 
 </body></html>
